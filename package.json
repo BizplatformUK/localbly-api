@@ -1,0 +1,33 @@
+{
+  "name": "fetchapi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon app.js",
+    "create": "nodemon config/create.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/storage-blob": "^12.12.0",
+    "@prisma/client": "^4.10.1",
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "mongodb": "^4.11.0",
+    "multer": "^1.4.5-lts.1",
+    "mysql": "^2.18.1",
+    "node-schedule": "^2.1.1",
+    "nodemailer": "^6.9.1",
+    "string-similarity": "^4.0.4",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20",
+    "prisma": "^4.10.1"
+  }
+}

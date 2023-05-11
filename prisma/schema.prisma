@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id            String          @id
+  name          String
+  email         String          @unique
+  number        String          @unique
+  password      String
+  resetToken    String          @default("na")
+  role          String          @default("admin")
+  shop          shops[]         @relation("shopOwner")
+  pickupstores  pickupstores[]  @relation("users")
+  subscriptions subscriptions[] @relation("users")
+  createdAt     DateTime        @default(now())
+}
+
+model shops {
+  id              String            @id
+  name            String
+  email           String            @default("na")
+  slug            String
+  town            String
+  type            shoptypes         @relation("type", fields: [typeID], references: [id])
+  typeID          String            @default("na")
+  version         String            @default("free")
+  sellingOn       String
+  logo            String
+  location        String
+  shopOwner       users             @relation("shopOwner", fields: [ownerID], references: [id])
+  offers          offers[]          @relation("shops")
+  subcategories   subcategories[]   @relation("shops")
+  services        services[]        @relation("shops")
+  clients         clients[]         @relation("shops")
+  category        categories[]      @relation("shops")
+  products        products[]        @relation("shops")
+  productpictures productpictures[] @relation("shops")
+  productoptions  productoptions[]  @relation("shops")
+  collections     collections[]     @relation("shops")
+  banner          banner[]          @relation("shops")
+  ownerID         String
+  phoneNumbers    String
+  rating          Float             @default(0)
+  price           Int               @default(0)
+  brandcolor      String            @default("#000000")
+  about           String            @db.VarChar(1000)
+  createdAt       DateTime          @default(now())
+}
+
+model shoptypes {
+  id        String   @id
+  name      String
+  slug      String
+  picture   String
+  shops     shops[]  @relation("type")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model categories {
+  id        String          @id
+  name      String
+  slug      String
+  picture   String
+  featured  Boolean?        @default(false)
+  shop      shops           @relation("shops", fields: [shopID], references: [id])
+  category  subcategories[] @relation("categories")
+  shopID    String
+  products  products[]      @relation("categories")
+  createdAt DateTime        @default(now())
+}
+
+model subcategories {
+  id         String     @id
+  name       String
+  slug       String
+  picture    String
+  category   categories @relation("categories", fields: [categoryID], references: [id])
+  categoryID String
+  shop       shops      @relation("shops", fields: [shopID], references: [id])
+  shopID     String
+  products   products[] @relation("subcategories")
+  createdAt  DateTime   @default(now())
+}
+
+model offers {
+  id         String     @id
+  name       String
+  slug       String
+  type       OfferType
+  discount   Int
+  couponCode String?    @default("na")
+  quantity   Int?       @default(0)
+  picture    String
+  validFrom  DateTime
+  validTo    DateTime
+  featured   Boolean?   @default(false)
+  shop       shops      @relation("shops", fields: [shopID], references: [id])
+  shopID     String
+  products   products[] @relation("offers")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+enum OfferType {
+  OFFER
+  COUPON
+}
+
+model services {
+  id          String   @id
+  name        String
+  price       Int      @default(0)
+  slug        String
+  description String   @db.VarChar(1000)
+  picture     String
+  shop        shops    @relation("shops", fields: [shopID], references: [id])
+  shopID      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model collections {
+  id        String     @id
+  name      String
+  slug      String
+  picture   String
+  featured  Boolean    @default(false)
+  shop      shops      @relation("shops", fields: [shopID], references: [id])
+  shopID    String
+  products  products[] @relation("collections")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model clients {
+  id         String     @id
+  name       String
+  logo       String?
+  shop       shops      @relation("shops", fields: [shopID], references: [id])
+  shopID     String
+  clientType clientType @default(Individual)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+enum clientType {
+  Corporate
+  Individual
+}
+
+model products {
+  id               String            @id
+  name             String
+  slug             String
+  picture          String            @db.VarChar(1000)
+  category         categories        @relation("categories", fields: [categoryID], references: [id])
+  categoryID       String
+  subcategory      subcategories     @relation("subcategories", fields: [subcategoryID], references: [id])
+  subcategoryID    String
+  price            Int
+  onSale           Boolean           @default(false)
+  salePrice        Int               @default(0)
+  featuredHome     Boolean?          @default(false)
+  featuredCategory Boolean?          @default(false)
+  description      String            @db.Text
+  options          Json?
+  tags             String            @db.VarChar(1000)
+  offers           offers?           @relation("offers", fields: [offerID], references: [id])
+  offerID          String?
+  shop             shops             @relation("shops", fields: [shopID], references: [id])
+  shopID           String
+  collections      collections?      @relation("collections", fields: [collectionsID], references: [id])
+  collectionsID    String?           @default("na")
+  rating           Float?            @default(0)
+  reviews          reviews[]         @relation("products")
+  productpictures  productpictures[] @relation("products")
+  productoptions   productoptions[]  @relation("products")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model reviews {
+  id        String   @id
+  name      String
+  email     String
+  product   products @relation("products", fields: [productID], references: [id])
+  productID String
+  rating    Float
+  review    String   @db.VarChar(1000)
+  createdAt DateTime @default(now())
+}
+
+model productpictures {
+  id        String   @id
+  picture   String   @db.VarChar(1000)
+  shop      shops    @relation("shops", fields: [shopID], references: [id])
+  shopID    String
+  product   products @relation("products", fields: [productID], references: [id])
+  productID String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model productoptions {
+  id        String   @id
+  option    String
+  price     Int
+  shop      shops    @relation("shops", fields: [shopID], references: [id])
+  shopID    String
+  product   products @relation("products", fields: [productID], references: [id])
+  productID String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model pickupstores {
+  id            String          @id
+  name          String
+  phonenumber   String
+  email         String          @unique
+  location      String          @db.VarChar(500)
+  town          String
+  logo          String
+  ownerID       users           @relation("users", fields: [userID], references: [id])
+  packages      packages[]      @relation("stores")
+  subscriptions subscriptions[] @relation("stores")
+  userID        String
+  emailHost     String?
+  emailPort     Int?
+  emailUser     String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model packages {
+  id           String          @id
+  name         String
+  price        Int
+  description  Json
+  store        pickupstores    @relation("stores", fields: [storeID], references: [id])
+  storeID      String
+  subscription subscriptions[] @relation("packages")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model subscriptions {
+  id                String       @id
+  userID            String
+  users             users        @relation("users", fields: [userID], references: [id])
+  storeID           String
+  stores            pickupstores @relation("stores", fields: [storeID], references: [id])
+  packageID         String
+  packages          packages     @relation("packages", fields: [packageID], references: [id])
+  paymentStatus     Boolean      @default(false)
+  mpesaPhoneNumber  String       @default("0")
+  CheckoutRequestID String?      @default("na")
+  receipt           String?      @default("na")
+  createdAt         DateTime     @default(now())
+}
+
+model banner {
+  id     String @id
+  name   String
+  slug   String
+  image  String
+  shop   shops  @relation("shops", fields: [shopID], references: [id])
+  shopID String
+  link   String
+  itemID String
+}
