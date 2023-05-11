@@ -39,11 +39,11 @@ router.post('/update-store/:id', authenticateJwtToken, post.updatestore)
 
 router.post('/update-shop/:id', authenticateJwtToken, authRole, post.updateShop)
 
-router.post('/approve-admin/:id', authenticateJwtToken, authRole, post.approveAdmin)
+//router.post('/approve-admin/:id', authenticateJwtToken, authRole, post.approveAdmin)
 
-router.post('/suspend-admin/:id', authenticateJwtToken, authRole, post.suspendAdmin )
+//router.post('/suspend-admin/:id', authenticateJwtToken, authRole, post.suspendAdmin )
 
-router.delete('/delete-admin/:id', authenticateJwtToken, authRole, post.deleteAdmin)
+//router.delete('/delete-admin/:id', authenticateJwtToken, authRole, post.deleteAdmin)
 
 router.post('/add-type', authenticateJwtToken, authRole, post.addTypes)
 

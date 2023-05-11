@@ -1,4 +1,3 @@
-const {checkifEmpty, insertToDB, findOne, updateData, deleteData} = require('../../config/Dbfunctions')
 const {isEmpty, DBInsert, fetch, findData, update, findShopByTypes, fetchSingleShop, countProducts, deleteItem, removefrombanner, fetchbannercontents} = require('../../config/prisma')
 const {generateID, isValidPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
@@ -241,7 +240,7 @@ const updateShop = async(req,res)=> {
         return res.status(500).json(error.message)
     }
 }
-
+/*
 const approveAdmin = async(req,res)=> {
     const{id}=req.params
     const admin = await findOne({_id:id}, collection)
@@ -284,7 +283,7 @@ const deleteAdmin = async(req,res)=> {
         return res.status(200).json(error)
     }
 
-}
+}*/
 
 const addTypes = async(req,res)=> {
     const {name, picture} = req.body;
@@ -347,7 +346,7 @@ const getShops = async(req,res)=> {
             const item = {id:shop.id, name:shop.name, slug:shop.slug, logo:shop.logo, town:shop.town, location:shop.location, numbers:shop.phoneNumbers, color:shop.brandcolor}
             response.push(item)
         })
-        res.status(200).json({totalPages:shops.totalPages, response})
+        res.status(200).json(shops)
     }catch(error){
         res.status(500).json(error.message)
     }
@@ -387,9 +386,6 @@ module.exports={
     Login, 
     createShop, 
     updateShop, 
-    approveAdmin, 
-    suspendAdmin, 
-    deleteAdmin, 
     fetchusers, 
     createStore, 
     updatestore, 

@@ -9,7 +9,7 @@ const db = mysql.createConnection({
   database:process.env.SQL_DBNAME, 
   port:process.env.SQL_PORT, 
   ssl: {
-    ca: fs.readFileSync("./ssl/DigiCertGlobalRootCA.crt.pem")
+    ca: fs.readFileSync("./DigiCertGlobalRootCA.crt.pem")
   }
 });
 
