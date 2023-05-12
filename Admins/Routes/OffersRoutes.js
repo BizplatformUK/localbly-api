@@ -13,7 +13,6 @@ router.get('/get-offers', post.getShopOffers)
 
 router.get('/get-past-offers', post.getPastOffers)
 
-router.get('/featured-offers/:slug', post.featuredOffers)
 
 router.get('/get-featured-offers', post.getfeaturedOffers)
 

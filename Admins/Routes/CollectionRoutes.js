@@ -9,7 +9,7 @@ router.patch('/edit-collection/:id', authenticateJwtToken, authAdmin, post.editC
 
 router.delete('/delete-collection/:id', authenticateJwtToken, authAdmin, post.deleteCollection)
 
-router.get('/fetch-collections', post.fetchCollections)
+router.get('/get-collections', post.fetchCollections)
 
 router.get('/get-featured-collections', post.fetchFeaturedCollections)
 

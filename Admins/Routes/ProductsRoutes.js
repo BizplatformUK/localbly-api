@@ -31,17 +31,17 @@ router.get('/get-shop-products', post.getshopProducts)
 
 router.get('/search-products', post.searchProducts)
 
-router.get('/product-offers/:slug',  post.getofferProducts)
+router.get('/get-offer-products',  post.getofferProducts)
 
-router.get('/get-related-products/:slug', post.getRelatedproducts)
+router.get('/get-related-products', post.getRelatedproducts)
 
-router.get('/featured-home-products/:slug', post.getFeaturedHomeProducts)
+router.get('/get-featured-home-products', post.getFeaturedHomeProducts)
 
-router.get('/featured-category-products/:slug', post.getFeaturedCategoryProducts)
+router.get('/get-featured-category-products', post.getFeaturedCategoryProducts)
 
-router.get('/get-products/:slug', post.getSubcategoryProducts)
+router.get('/get-products', post.getSubcategoryProducts)
 
-router.get('/single-product', post.getSingleProduct)
+router.get('/get-single-product', post.getSingleProduct)
 
 router.get('/product-images/:id', post.getProductImages)
 

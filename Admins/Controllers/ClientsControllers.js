@@ -70,11 +70,12 @@ const deleteClient = async(req, res)=> {
 }
 
 const fetchClients = async(req,res)=> {  
+    const {id, page} = req.query;
     try{
         let response = []
-        const pageNumber = parseInt(req.query.page )|| 1;
-        const params = {shopID:req.query.id, clientType:'Corporate'}
-        const clients = req.query.id ? await fetch('clients', params, pageNumber) : findShopClients(req,query.slug, pageNumber)
+        const pageNumber = parseInt(page )|| 1;
+        const params = {shopID:id, clientType:'Corporate'}
+        const clients = await fetch('clients', params, pageNumber);
         return res.status(200).json(clients)
     }catch(error){
         return res.status(500).json(error.message)

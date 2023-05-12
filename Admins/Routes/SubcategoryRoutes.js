@@ -12,7 +12,6 @@ router.delete('/delete-subcategory/:id', authenticateJwtToken, authAdmin, post.d
 
 router.get('/get-subcategories', post.fetchShopSubcategories)
 
-router.get('/fetch-subcategories/:slug', post.getCategorySubcategories)
 
 router.post('/get-cat-subcategories/:id', post.getCatSubcategories)
 

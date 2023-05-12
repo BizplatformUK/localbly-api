@@ -79,10 +79,11 @@ const deleteCollection = async(req,res)=> {
 }
 
 const fetchCollections = async(req,res)=> {
+    const {id, page} = req.query;
     try{
-        const pageNumber = parseInt(req.query.page )|| 1;
-        const params = {shopID:req.query.id}
-        const collections = req.query.id ? await fetch('collections', params, pageNumber) :  await findByShop(req.query.slug, 'collections', pageNumber)
+        const pageNumber = parseInt(page )|| 1;
+        const params = {shopID:id}
+        const collections = await fetch('collections', params, pageNumber);
         return res.status(200).json(collections)
         
     }catch(error){
@@ -91,38 +92,29 @@ const fetchCollections = async(req,res)=> {
 }
 
 const fetchFeaturedCollections = async(req,res)=> {
+    const {id, page} = req.query;
     try{
-        const pageNumber = parseInt(req.query.page )|| 1;
+        const pageNumber = parseInt(page )|| 1;
         let response = []
-        if(req.query.id){
-            const params = {shopID:req.query.id, featured:true}
-            const collections = await fetch('collections', params, pageNumber);
-            collections.items.forEach(collection=> {
-                const item = {id:collection.id, name:collection.name, picture:collection.picture, featured:collection.featured, date:collection.createdAt}
-                response.push(item)
-            })
-            return res.status(200).json({total:collections.total, data:response})
-        } 
-        if(req.query.slug){
-            const params = {slug:req.query.slug, featured:true}
-            const collections = await fetch('collections', params, pageNumber);
-            collections.items.forEach(collection=> {
-                const item = {id:collection.id, name:collection.name, picture:collection.picture, featured:collection.featured, slug:collection.slug}
-                response.push(item)
-            })
-            return res.status(200).json({total:collections.total, data:response})
-        }
+        const params = {shopID:id, featured:true}
+        const collections = await fetch('collections', params, pageNumber);
+        collections.items.forEach(collection=> {
+            const item = {id:collection.id, name:collection.name, picture:collection.picture, featured:collection.featured, date:collection.createdAt}
+            response.push(item)
+        })
+        return res.status(200).json({total:collections.total, data:response})
+ 
     }catch(error){
         return res.status(500).json(error.message)
     }
 }
 
 const fetchStandardCollections = async(req,res)=> {
-    
+    const {id,page} = req.query;
     try{
-        const pageNumber = parseInt(req.query.page )|| 1;
+        const pageNumber = parseInt(page )|| 1;
         let response = []
-            const params = {shopID:req.query.id, featured:false}
+            const params = {shopID:id, featured:false}
             const collections = await fetch('collections', params, pageNumber);
             collections.items.forEach(collection=> {
                 const item = {id:collection.id, name:collection.name, picture:collection.picture, featured:collection.featured, date:collection.createdAt}

@@ -89,7 +89,7 @@ const fetchShopSubcategories = async(req,res)=> {
     const {id, page}=req.query;
     const pageNumber = parseInt(page )|| 1;
     try{
-        const subcategories = await getSubcategoriesWithCategory(id, pageNumber);
+        const subcategories = req.query.slug  ? await fetchCategorySubcategories(req.query.slug, id, pageNumber) : await getSubcategoriesWithCategory(id, pageNumber)
         res.status(200).json(subcategories)
 
     }catch(error){
@@ -97,16 +97,7 @@ const fetchShopSubcategories = async(req,res)=> {
     }
 }
 
-const getCategorySubcategories = async(req,res)=> {
-    const {id}= req.body;
-    const {slug} = req.params;
-    try{
-        const subcategories = await fetchCategorySubcategories(slug, id)
-        res.status(200).json(subcategories)
-    }catch(error){
-        res.status(500).json(error.message)
-    }
-}
+
 
 const getCatSubcategories = async(req,res)=> {
     const {catId}= req.body;
@@ -131,4 +122,4 @@ const searchSubcategories = async(req,res)=> {
     }
 }
 
-module.exports = {addSubcategory, editSubcategory, deleteSubcategory, fetchShopSubcategories, getCategorySubcategories, getCatSubcategories, searchSubcategories}
+module.exports = {addSubcategory, editSubcategory, deleteSubcategory, fetchShopSubcategories, getCatSubcategories, searchSubcategories}

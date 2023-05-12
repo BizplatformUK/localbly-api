@@ -83,10 +83,11 @@ const deleteService = async(req,res)=> {
 }
 
 const fetchServices = async(req,res)=> {
+    const {id, page} = req.query;
     try{
-        const pageNumber = parseInt(req.query.page )|| 1;
-        const params = {shopID:req.query.id}
-        const services = req.query.id ? await fetch('services', params, pageNumber) : await findByShop(req.query.slug, 'services', pageNumber)
+        const pageNumber = parseInt(page )|| 1;
+        const params = {shopID:id}
+        const services =  await fetch('services', params, pageNumber);
         return res.status(200).json(services)
     }catch(error){
         return res.status(500).json(error.message)

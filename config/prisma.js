@@ -428,15 +428,15 @@ const searchshopproducts = async(query, id, pageNumber)=> {
 
 
 
-const getOfferProducts = async(slug)=> {
-    const pageNumber = 1;
+const getOfferProducts = async(slug, id, pageNumber)=> {
     const itemsPerPage = 10;
     try{
         const products = await prisma.products.findMany({
             where: {
               offers:{
                 slug:slug
-              }
+              },
+              shopID:id
             },
             include: {
                 offers: true,
@@ -449,8 +449,11 @@ const getOfferProducts = async(slug)=> {
                 createdAt: 'asc'
             }
           })
-          return products.map(product => {
-            return {
+          const total = await prisma.products.count({where:{offers:{slug:slug}, shopID:id}})
+          const totalPages = Math.ceil( total / itemsPerPage)
+          let response =[]
+           products.map(product => {
+            const item = {
               id: product.id,
               name: product.name,
               slug:product.slug,
@@ -463,7 +466,9 @@ const getOfferProducts = async(slug)=> {
               discount:product.offers.discount,
               code:product.offers.couponCode
             }
+            response.push(item)
           })
+          return{total, totalPages, response}
 
     }catch(error){
         return error.message
@@ -583,18 +588,12 @@ const findProductReviews = async(slug)=>{
 }
 
 
-const fetchFeaturedHomeProducts = async(slug)=>{
+const fetchFeaturedHomeProducts = async(params, pageNumber)=>{
     try{
-        const pageNumber = 1;
-        const itemsPerPage = 10;
+        const itemsPerPage = 6;
 
         const products = await prisma.products.findMany({
-            where: {
-                shop:{
-                    slug:slug
-                },
-                featuredHome:true
-            },
+            where: params,
             include: {
                 category:true,
                 subcategory:true,
@@ -627,19 +626,13 @@ const fetchFeaturedHomeProducts = async(slug)=>{
     }
 }
 
-const fetchFeaturedCategoryProducts = async(slug, id)=>{
+const fetchFeaturedCategoryProducts = async(params, pageNumber)=>{
     try{
         const pageNumber = 1;
         const itemsPerPage = 10;
 
         const products = await prisma.products.findMany({
-            where: {
-                category:{
-                    slug:slug
-                },
-                featuredCategory:true,
-                shopID:id
-            },
+            where:params,
             include: {
                 category:true,
                 subcategory:true,
@@ -672,18 +665,12 @@ const fetchFeaturedCategoryProducts = async(slug, id)=>{
     }
 }
 
-const fetchSubcategoryProducts = async(slug, id)=>{
+const fetchSubcategoryProducts = async(params, pageNumber)=>{
     try{
-        const pageNumber = 1;
         const itemsPerPage = 10;
 
         const products = await prisma.products.findMany({
-            where: {
-                subcategory:{
-                    slug:slug
-                },
-                shopID:id
-            },
+            where: params,
             include: {
                 category:true,
                 subcategory:true,
@@ -695,8 +682,11 @@ const fetchSubcategoryProducts = async(slug, id)=>{
                 createdAt: 'asc'
             }
         })
-        return products.map(product => {
-            return {
+        const total = await prisma.products.count({where:params});
+        const totalPages = Math.ceil(total / itemsPerPage)
+        let items = []
+         products.map(product => {
+            const item = {
               id: product.id,
               name: product.name,
               slug:product.slug,
@@ -709,7 +699,9 @@ const fetchSubcategoryProducts = async(slug, id)=>{
               discount:product.offers == null ? null : product.offers.discount,
               code:product.offers == null ? null : product.offers.couponCode
             }
-          })
+            items.push(item)
+        })
+        return{total, totalPages, items}
 
     }catch(error){
         return error.message
@@ -918,11 +910,9 @@ const fetchSingleShop = async(params)=>{
 
 
 
-const fetchCategorySubcategories = async(slug, id)=>{
+const fetchCategorySubcategories = async(slug, id, pageNumber)=>{
     try{
-        const pageNumber = 1;
         const itemsPerPage = 10;
-
         const subcategories = await prisma.subcategories.findMany({
             where: {
                 category:{
@@ -939,14 +929,20 @@ const fetchCategorySubcategories = async(slug, id)=>{
                 createdAt: 'asc'
             }
         })
-        return subcategories.map(subcategory => {
-            return {
+
+        const total = await prisma.subcategories.count({where:{category:{slug:slug}, shopID:id}})
+        const totalPages = Math.ceil(total / itemsPerPage)
+        let response = []
+         subcategories.map(subcategory => {
+            const item = {
               id: subcategory.id,
               name: subcategory.name,
               category: subcategory.category.name,
               picture:subcategory.picture
             }
+            response.push(item)
           })
+          return{total, totalPages, response}
 
     }catch(error){
         return error.message

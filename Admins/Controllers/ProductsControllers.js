@@ -308,26 +308,12 @@ const searchProducts = async(req,res)=> {
 }
 
 const getofferProducts = async(req,res)=> {
-    const {slug}= req.params;
+    const {id, page, slug} = req.query;
     try{
         let response = []
-        const products = await getOfferProducts(slug)
-        products.forEach(product=> {
-            const item = {
-                id:product.id, 
-                name:product.name, 
-                slug:product.slug,
-                price:product.price,
-                picture:product.picture, 
-                category:product.category, 
-                subcategory:product.subcategory,
-                onsale:product.onSale,
-                saleprice:product.salePrice,
-                discountPrice: getDiscountPrice(product.price, product.discount)
-            }
-            response.push(item)
-        })
-        res.status(200).json(response)
+        const pageNumber = parseInt(page) || 1;
+        const products = await getOfferProducts(slug, id, pageNumber)
+        res.status(200).json(products)
     }catch(error){
         return res.status(500).json(error.message)
     }
@@ -336,7 +322,7 @@ const getofferProducts = async(req,res)=> {
 
 
 const getRelatedproducts = async(req,res)=> {
-    const {slug} = req.params;
+    const {slug} = req.query;
     try{
         const products = await getRelatedProducts(slug)
         res.status(200).json(products)
@@ -347,9 +333,11 @@ const getRelatedproducts = async(req,res)=> {
 }
 
 const getFeaturedHomeProducts = async(req,res)=> {
-    const {slug}=req.params;
+    const {id, page}=req.query;
     try{
-        const products = await fetchFeaturedHomeProducts(slug)
+        const pageNumber = parseInt(page) || 1;
+        const params = {featuredHome:true, shopID:id}
+        const products = await fetchFeaturedHomeProducts(params, pageNumber)
         res.status(200).json(products)
 
     }catch(error){
@@ -358,10 +346,11 @@ const getFeaturedHomeProducts = async(req,res)=> {
 }
 
 const getFeaturedCategoryProducts = async(req,res)=> {
-    const {slug}=req.params;
-    const {id}=req.body;
+    const {id, page, slug} = req.query;
     try{
-        const products = await fetchFeaturedCategoryProducts(slug, id)
+        const params =  {category:{slug:slug},featuredCategory:true, shopID:id};
+        const pageNumber = parseInt(page) || 1;
+        const products = await fetchFeaturedCategoryProducts(params,pageNumber)
         res.status(200).json(products)
 
     }catch(error){
@@ -371,12 +360,13 @@ const getFeaturedCategoryProducts = async(req,res)=> {
 
 
 const getSubcategoryProducts = async(req,res)=> {
-    const {slug}=req.params;
-    const {id}=req.body;
+    const {id, slug, page} = req.query;
     try{
-        const products = await fetchSubcategoryProducts(slug, id)
+        const pageNumber = parseInt(page) || 1;
+        const params = {subcategory:{slug:slug},shopID:id};
+        const products = await fetchSubcategoryProducts(params, pageNumber)
         let response = []
-        products.forEach(product=> {
+        products.items.forEach(product=> {
             const item = {
                 id:product.id, 
                 name:product.name, 
@@ -391,7 +381,7 @@ const getSubcategoryProducts = async(req,res)=> {
             }
             response.push(item)
         })
-        res.status(200).json(response)
+        res.status(200).json({total:products.total, totalPages:products.totalPages, response})
 
     }catch(error){
         res.status(500).json(error.message)
@@ -399,13 +389,9 @@ const getSubcategoryProducts = async(req,res)=> {
 }
 
 const getSingleProduct = async(req,res)=> {
+    const {id, slug} = req.query;
     try{
-        let params
-        if(req.query.id){
-            params = {id:req.query.id}
-        }else{
-            params={slug:req.query.slug}
-        }
+        const params = {shopID:id, slug}
         const product = await fetchSingleItem(params)
         const item = {
             id:product.id, 
@@ -418,7 +404,8 @@ const getSingleProduct = async(req,res)=> {
             onsale:product.onSale,
             saleprice:product.salePrice,
             discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount),
-            couponCode:product.code == null ? null : product.code
+            couponCode:product.code == null ? null : product.code,
+            description:product.description
         }
         res.status(200).json(item)
 

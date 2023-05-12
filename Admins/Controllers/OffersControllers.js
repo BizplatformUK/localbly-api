@@ -87,17 +87,19 @@ const deleteOffer = async(req,res)=> {
 }
 
 const getShopOffers = async(req,res)=> {
+    const {id, page} = req.query;
     try{
         const currentDate = new Date();
-        const pageNumber = parseInt(req.query.page )|| 1;
+        const pageNumber = parseInt(page)|| 1;
         let response = []
-        const params = {shopID:req.query.id, validTo:{gte:currentDate}}
-        const offers = req.query.id ? await fetch('offers', params, pageNumber) : await findByShop(req.query.slug, 'offers') ;
+        const params = {shopID:id, validTo:{gte:currentDate}}
+        const offers = await fetch('offers', params, pageNumber) ;
         await Promise.all(offers.items.map(async (offer) => {
-                const isPresent = await bannerPresent(offer.id, req.query.id);
+                const isPresent = await bannerPresent(offer.id, id);
                     const item = {
                         id:offer.id, 
-                        name:offer.name, 
+                        name:offer.name,
+                        slug:offer.slug,
                         type:offer.type,
                         discount:offer.discount,
                         quantity:offer.quantity, 
@@ -185,14 +187,15 @@ const filterOffers = async(req,res)=> {
 }
 
 const getfeaturedOffers = async(req,res)=> {
+    const {id, page} = req.query;
     try{
         const currentDate = new Date();
-        const pageNumber = parseInt(req.query.page )|| 1;
+        const pageNumber = parseInt(page )|| 1;
         let response = []
-            const params = {shopID:req.query.id, featured:true,  validTo:{gte:currentDate}}
+            const params = {shopID:id, featured:true,  validTo:{gte:currentDate}}
             const offers = await fetch('offers', params, pageNumber);
-            await Promise.all(offers.item.map(async (offer) => {
-                const isPresent = await bannerPresent(offer.id, req.query.id);
+            await Promise.all(offers.items.map(async (offer) => {
+                const isPresent = await bannerPresent(offer.id, id);
                     const item = {
                         id:offer.id, 
                         name:offer.name, 
@@ -210,7 +213,7 @@ const getfeaturedOffers = async(req,res)=> {
                     }
                     response.push(item)
             }));
-            return res.status(200).json({response:{total:offers.total, data:response}, code:0})
+            return res.status(200).json({total:offers.total, totalPages:offers.totalPages, response})
     }catch(error){
         return res.status(500).json(error.message)
     }
@@ -250,20 +253,5 @@ const searchOffers = async(req,res)=> {
     }
 }
 
-const featuredOffers = async(req,res)=> {
-    const {slug}= req.params;
-    const pageNumber = parseInt(req.query.page )|| 1;
-    try{
-        const offers = await getFeaturedOffers(slug, pageNumber)
-        let response = [];
-        /*offers.data.forEach(offer=> {
-            const item = {id:offer.id, name:offer.name, picture:offer.picture, slug:offer.slug, description:offer.description}
-            response.push(item)
-        })*/
-        res.status(200).json(offers)
-    }catch(error){
-        return res.status(500).json(error.message)
-    }
-}
 
-module.exports = {addOffer, editOffers, deleteOffer, getShopOffers, featuredOffers, getPastOffers, getfeaturedOffers, filterOffers, searchOffers}
+module.exports = {addOffer, editOffers, deleteOffer, getShopOffers, getPastOffers, getfeaturedOffers, filterOffers, searchOffers}

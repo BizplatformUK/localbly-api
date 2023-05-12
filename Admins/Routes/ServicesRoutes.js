@@ -9,7 +9,7 @@ router.patch('/edit-service/:id', authenticateJwtToken, authAdmin, post.editServ
 
 router.delete('/delete-service/:id', authenticateJwtToken, authAdmin, post.deleteService)
 
-router.get('/fetch-services', post.fetchServices)
+router.get('/get-services', post.fetchServices)
 
 router.get('/search-services', post.searchServices)
 

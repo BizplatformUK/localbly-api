@@ -33,14 +33,14 @@ const prisma = new PrismaClient()
 
 prisma.$connect()
   .then(() => {
-    console.log('Connection to database established.');
+    app.listen(4000, ()=> {
+      console.log('listening on port 4000')
+    })
   })
   .catch((error) => {
     console.error('Unable to connect to the database:', error);
-  });
-    app.listen(4000, ()=> {
-        console.log('listening on port 4000')
-    })
+});
+    
   
 
 //app.use('/api/shops', Routes)
