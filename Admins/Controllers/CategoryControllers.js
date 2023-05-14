@@ -81,15 +81,15 @@ const deleteCategory = async(req, res)=> {
 }
 
 const getShopCategories = async(req,res)=> {
+    const {id, page} = req.query;
     try{
-        const pageNumber = parseInt(req.query.page )|| 1;
-        let response = []
-
-            const params = {shopID:req.query.id}
-            const categories = req.query.id ? await fetch('categories', params, pageNumber) : await findShopCategories(req.query.slug) ;
+            const pageNumber = parseInt(page)|| 1;
+            const response = []
+            const params = {shopID:id}
+            const categories =  await fetch('categories', params, pageNumber);
             const cats = categories.items;
             await Promise.all(cats.map(async (category) => {
-                const isPresent = await bannerPresent(category.id, req.query.id);
+                const isPresent = await bannerPresent(category.id, id);
                 const item = {
                     id: category.id,
                     name: category.name,
@@ -101,18 +101,19 @@ const getShopCategories = async(req,res)=> {
                 };
                 response.push(item)
             }));
-            return res.status(200).json({total:categories.total, totalPages:categories.totalPages, data:response})
+            return res.status(200).json({total:categories.total, totalPages:categories.totalPages, items:response})
     }catch(error){
         res.status(500).json(error.message)
     }
 }
 
 const getFeaturedShopCategories = async(req,res)=> {
+    const {id, page} = req.query;
     try{
         const pageNumber = parseInt(req.query.page )|| 1;
         let response = []
-            const params = {shopID:req.query.id, featured:true}
-            const categories = req.query.id ? await fetch('categories', params, pageNumber) : await findShopCategories({shop:{slug:req.query.slug}, featured:true}, pageNumber);
+            const params = {shopID:id, featured:true}
+            const categories = await fetch('categories', params, pageNumber);
             const cats = categories.items;
             await Promise.all(cats.map(async (category) => {
                 const isPresent = await bannerPresent(category.id, req.query.id);

@@ -89,7 +89,7 @@ const fetchShopSubcategories = async(req,res)=> {
     const {id, page}=req.query;
     const pageNumber = parseInt(page )|| 1;
     try{
-        const subcategories = req.query.slug  ? await fetchCategorySubcategories(req.query.slug, id, pageNumber) : await getSubcategoriesWithCategory(id, pageNumber)
+        const subcategories = await getSubcategoriesWithCategory(id, pageNumber)
         res.status(200).json(subcategories)
 
     }catch(error){
@@ -100,11 +100,10 @@ const fetchShopSubcategories = async(req,res)=> {
 
 
 const getCatSubcategories = async(req,res)=> {
-    const {catId}= req.body;
-    const {id} = req.params;
-    const pageNumber = parseInt(req.query.page )|| 1;
+    const {id, page, cat} = req.query;
+    const pageNumber = parseInt(page)|| 1;
     try{
-        const subcategories = await fetch('subcategories', {categoryID:catId, shopID:id}, pageNumber)
+        const subcategories = await fetchCategorySubcategories(id, cat, pageNumber)
         res.status(200).json(subcategories)
     }catch(error){
         res.status(500).json(error.message)
@@ -115,7 +114,7 @@ const searchSubcategories = async(req,res)=> {
     const {id, term, page} = req.query
     try{
         const pageNumber = parseInt(page )|| 1;
-        const subcategories = await searchSubCats(term, id, pageNumber);
+        const subcategories = await search('subcategories', term,  id, pageNumber);
         return res.status(200).json(subcategories)
     }catch(error){
         res.status(500).json(error.message)

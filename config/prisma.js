@@ -787,7 +787,7 @@ const getSubcategoriesWithCategory = async(id, pageNumber)=> {
           })
 
           const total = await prisma.subcategories.count({where:{shopID:id}})
-          let data = []
+          let items = []
           subcategories.map(subcategory => {
             const item = {
               id: subcategory.id,
@@ -796,11 +796,10 @@ const getSubcategoriesWithCategory = async(id, pageNumber)=> {
               picture:subcategory.picture,
               catid: subcategory.categoryID
             }
-            data.push(item)
+            items.push(item)
           })
           const totalPages = Math.ceil(total / itemsPerPage)
-
-          return {total, totalPages, data,}
+          return {total, totalPages, items}
 
     }catch(error){
         return error.message
@@ -812,69 +811,7 @@ const getSubcategoriesWithCategory = async(id, pageNumber)=> {
 }
 
 
-const searchSubCats = async(query, id, pageNumber)=> {
-    const itemsPerPage = 6;
-    try{
-        const [items, total] = await Promise.all([
-            prisma.subcategories.findMany({
-                where: {
-                    AND: [
-                      {
-                        name: {
-                          contains: query
-                        }
-                      },
-                      {
-                        shopID: id
-                      }
-                    ]
-                  },
-                  include:{
-                    category:true
-                  },
-              skip: (pageNumber - 1) * itemsPerPage,
-              take: itemsPerPage,
-              orderBy: {
-                createdAt: "asc",
-              },
-            }),
-            prisma.subcategories.count({
-                where: {
-                    AND: [
-                      {
-                        name: {
-                          contains: query
-                        }
-                      },
-                      {
-                        shopID: id
-                      }
-                    ]
-                  },
-            }),
-          ]);
-        if(!items){return false}
-        const data = [];
-        items.forEach(item=>{
-            const single = {
-                id:item.id,
-                name:item.name,
-                slug:item.slug,
-                picture:item.picture,
-                category:item.category.name,
-            }
-            data.push(single)
-        })
-        const totalPages = Math.ceil(total / itemsPerPage)
-        return {total, totalPages, data}
-    }catch(error){
-        return error.message
-    }finally{
-        async()=> {
-            prisma.$disconnect()
-        }
-    }
-}
+
 
 const fetchSingleShop = async(params)=>{
     try{
@@ -910,14 +847,12 @@ const fetchSingleShop = async(params)=>{
 
 
 
-const fetchCategorySubcategories = async(slug, id, pageNumber)=>{
+const fetchCategorySubcategories = async(id, cat, pageNumber)=>{
     try{
         const itemsPerPage = 10;
         const subcategories = await prisma.subcategories.findMany({
             where: {
-                category:{
-                    slug:slug
-                },
+                categoryID:cat,
                 shopID:id
             },
             include: {
@@ -930,9 +865,9 @@ const fetchCategorySubcategories = async(slug, id, pageNumber)=>{
             }
         })
 
-        const total = await prisma.subcategories.count({where:{category:{slug:slug}, shopID:id}})
+        const total = await prisma.subcategories.count({where:{categoryID:cat, shopID:id}})
         const totalPages = Math.ceil(total / itemsPerPage)
-        let response = []
+        let items = []
          subcategories.map(subcategory => {
             const item = {
               id: subcategory.id,
@@ -940,9 +875,9 @@ const fetchCategorySubcategories = async(slug, id, pageNumber)=>{
               category: subcategory.category.name,
               picture:subcategory.picture
             }
-            response.push(item)
+            items.push(item)
           })
-          return{total, totalPages, response}
+          return{total, totalPages, items}
 
     }catch(error){
         return error.message
@@ -1122,5 +1057,5 @@ module.exports={isEmpty,
     fetchbannercontents,
     fetchshopProducts,
     searchshopproducts,
-    searchSubCats
+   
 }
