@@ -1,19 +1,15 @@
-trigger:
-  branches:
-    include:
-      - main
-
 # Node.js Express Web App to Linux on Azure
 # Build a Node.js Express app and deploy it to Azure as a Linux web app.
 # Add steps that analyze code, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
-
+trigger:
+- main
 
 variables:
 
   # Azure Resource Manager connection created during pipeline creation
-  azureSubscription: '3d5bd3da-86cf-4bd5-9347-af7d06275c35'
+  azureSubscription: '96360420-1f14-4296-813a-73ddb42c3b96'
 
   # Web app name
   webAppName: 'localblyapp'
@@ -36,7 +32,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '16.x'
+        versionSpec: '18.x'
       displayName: 'Install Node.js'
 
     - script: |
@@ -77,6 +73,6 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: webAppLinux
               appName: $(webAppName)
-              runtimeStack: 'NODE|10.10'
+              runtimeStack: 'NODE|18.10'
               package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
               startUpCommand: 'npm run start'
