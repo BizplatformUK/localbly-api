@@ -2,7 +2,7 @@ trigger:
   branches:
     include:
       - main
-      
+
 # Node.js Express Web App to Linux on Azure
 # Build a Node.js Express app and deploy it to Azure as a Linux web app.
 # Add steps that analyze code, save build artifacts, deploy, and more:
@@ -13,7 +13,7 @@ trigger:
 variables:
 
   # Azure Resource Manager connection created during pipeline creation
-  azureSubscription: '418e3f63-1694-4e39-8cf9-64f6d7e5f4c6'
+  azureSubscription: '3d5bd3da-86cf-4bd5-9347-af7d06275c35'
 
   # Web app name
   webAppName: 'localblyapp'
@@ -80,4 +80,3 @@ stages:
               runtimeStack: 'NODE|10.10'
               package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
               startUpCommand: 'npm run start'
-
