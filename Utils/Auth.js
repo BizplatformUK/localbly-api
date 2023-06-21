@@ -81,4 +81,21 @@ async function productLimit(req,res,next){
     next()
 }
 
-module.exports = {generateAccessToken, userExists, authenticateJwtToken, hashPassword, checkPassword, authRole, authAdmin, productLimit}
+function serialKey(){
+    let alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKFMNOPQRSTUVWXYZ';
+    let emailMessage1="serial"
+    
+    i=0;
+
+    while(i < 20){
+        let index = Math.floor(Math.random()  * alphabet.length);
+        let alpha = alphabet[index];
+        let number = Math.floor(Math.random() * 100);
+        let newToken = alpha.concat(number);
+        emailMessage1 = emailMessage1.concat(newToken);
+        i++;
+    }
+    return emailMessage1;
+}
+
+module.exports = {generateAccessToken, serialKey, userExists, authenticateJwtToken, hashPassword, checkPassword, authRole, authAdmin, productLimit}
