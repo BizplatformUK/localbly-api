@@ -13,8 +13,6 @@ trigger:
 variables:
 
   # Azure Resource Manager connection created during pipeline creation
-  runtimeStack: 'NODE'
-  nodeVersion: '16'
   azureSubscription: '3d5bd3da-86cf-4bd5-9347-af7d06275c35'
 
   # Web app name
@@ -79,6 +77,6 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: webAppLinux
               appName: $(webAppName)
-              runtimeStack: '$(runtimeStack)'
+              runtimeStack: 'NODE|16.13.2'
               package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
               startUpCommand: 'npm run start'
