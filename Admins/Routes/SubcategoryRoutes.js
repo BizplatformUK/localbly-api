@@ -8,10 +8,11 @@ router.post('/add-subcategory/:id', authenticateJwtToken, authAdmin, post.addSub
 
 router.patch('/edit-subcategory/:id', authenticateJwtToken, authAdmin, post.editSubcategory)
 
-router.delete('/delete-subcategory/:id', authenticateJwtToken, authAdmin, post.deleteSubcategory)
+router.delete('/delete-subcategory/:id', /*authenticateJwtToken, authAdmin,*/ post.deleteSubcategory)
 
 router.get('/get-subcategories', post.fetchShopSubcategories)
 
+router.delete('/delete-subcategories/:id', post.deleteMultipleSubcategories)
 
 router.get('/get-cat-subcategories', post.getCatSubcategories)
 

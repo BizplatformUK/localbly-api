@@ -1,40 +1,22 @@
 const {generateID, getAbbreviation, slugify, getDiscountPrice, extractFileNameFromUrl,  compareStrings} = require('../../Utils/Utils');
 const {deleteBlob, deleteImages} = require('../Images/ImageController')
-const {isEmpty, 
-    DBInsert, 
-    findData, 
-    update, 
-    deleteItem, 
-    productUpdateMany, 
-    getOfferProducts, 
-    getRelatedProducts, 
-    fetchFeaturedHomeProducts, 
-    fetchFeaturedCategoryProducts, 
-    fetchSubcategoryProducts,
-    fetchSingleItem,
-    fetch,
-    fetchshopProducts,
-    searchshopproducts
-}= require('../../config/prisma');
+const {insertData, updateData, makeMultipleProductsFeatured, findstandardShopProducts, removeMultipleProductsFromFeatured, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
 
 
 const addProduct = async(req,res)=> {
     const {name, catId, subId, image, price, onSale, salePrice, fhome, fcat, description, options, tags, offerId, collection} = req.body
     const {id}=req.params
     try{
-        const product = await isEmpty('products', {name, shopID:id})
+        const product = await dbCheck({name, shopID:id}, 'products')
         if(product){return res.status(400).json({error:'A product with this name already exists', code:3})}
-        const shop = await findData('shops', {id:id})
+        const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const category = await findData('categories', {id:catId, shopID:id})
+        const category = await dbCheck({id:catId, shopID:id}, 'categories')
         if(!category){return res.sendStatus(404)}
-        const subcategory = await findData('subcategories', {id:subId, shopID:id})
+        const subcategory = await dbCheck({id:subId, shopID:id}, 'subcategories')
         if(!subcategory){return res.sendStatus(404)}
         const slug = slugify(name);
         const abbr = getAbbreviation(name)
-        //const searchTags = [category.name, subcategory.name];
-        //const tagsArr = tags.concat(searchTags)
-        //const tagsStr = tagsArr.join(', ');
         const params = {
             id: abbr + generateID(),
             name,
@@ -42,82 +24,24 @@ const addProduct = async(req,res)=> {
             picture: image,
             categoryID:catId,
             subcategoryID:subId,
-            category: category.categoryName,
-            subcategory:subcategory.subCategoryName,
             price,
             onSale,
             salePrice: salePrice == null ? 0 : salePrice,
             featuredHome: fhome,
             featuredCategory:fcat,
             description,
-            options,
+            options: JSON.stringify(options),
             tags,
             offerID: offerId == null ? null : offerId,
             collectionsID:collection === null ? null : collection,
             shopID:id
         }
-        const insert = await DBInsert('products', params)
+        const insert = await insertData(params, 'products')
         if(!insert){return res.sendStatus(400)}
         //const response = {id:insert.id, name:insert.name, slug:insert.slug, category:category.name, subcategory:subcategory.name, picture:insert.picture}
-        res.status(200).json({message: 'Product uploaded successfully', code:0, insert})
+        res.status(200).json(limit)
     }catch(error){
-        return res.status(500).json({error:error.message})
-    }
-}
-
-const addProductImg = async(req,res)=> {
-    const {shopId, picture}=req.body;
-    const {id}= req.params;
-    try{
-        const find = await findData('products', {id:id, shopID:shopId})
-        if(!find){return res.sendStatus(404)}
-        const shop = await findData('shops', {id:shopId})
-        if(!shop){return res.sendStatus(404)}
-        const params = {id:generateID(), picture, shopID:shopId, productID:id}
-        const insert = await DBInsert('productpictures', params)
-        res.status(200).json({message:'Image uploaded successfully', code:0, insert})
-    }catch(error){
-        return res.status(500).json({error:error.message})
-    }
-}
-
-const updateProductImg = async(req, res)=> {
-    const {shopId, productId, picture}= req.body;
-    const {id}=req.params;
-    try{
-        const shop = await findData('shops', {id:shopId})
-        if(!shop){return res.sendStatus(404)}
-        const product = await findData('products', {id:productId})
-        if(!product){return res.sendStatus(404)}
-        const ppic = await findData('productpictures', {id})
-        if(!ppic){return res.sendStatus(404)}
-        const blobname = extractFileNameFromUrl(ppic.picture)
-        const deleted = await deleteBlob(blobname, 'products')
-        if(deleted.code == 3){return res.status(500).json(deleted.error)}
-        const image = await update(id, 'productpictures', {picture})
-        res.status(200).json({message:'Picture updated', code:0, image})
-    }catch(error){
-        return res.status(500).json({error:error.message})
-    }
-}
-
-const deleteProductImage = async(req,res)=> {
-    const {shopId, productId}= req.body;
-    const {id}=req.params;
-    try{
-        const shop = await findData('shops', {id:shopId})
-        if(!shop){return res.sendStatus(404)}
-        const product = await findData('products', {id:productId})
-        const ppic = await findData('productpictures', {id})
-        if(!ppic){return res.sendStatus(404)}
-        const blobname = extractFileNameFromUrl(ppic.picture)
-        const deleted = await deleteBlob(blobname, 'products')
-        if(deleted.code == 3){return res.status(500).json(deleted.error)}
-        if(!product){return res.sendStatus(404)}
-        const deletion = await deleteItem(id, 'productpictures')
-        res.status(200).json({message:'Picture deleted successfully', deletion, deleted})
-    }catch(error){
-        return res.status(500).json({error:error.message})
+        return res.status(500).json(error.message)
     }
 }
 
@@ -125,13 +49,13 @@ const editProduct = async(req,res)=> {
     const {prodId, name, catId, subId, image, price, onSale, salePrice, fhome, fcat, description, options, tags, collection, offerId} = req.body
     const {id} = req.params;
     try{
-        const shop = await findData('shops', {id})
+        const shop = await getByID(id, 'shops',)
         if(!shop){return res.sendStatus(404)}
-        const category = await findData('categories', {id:catId,shopID:id})
+        const category = await dbCheck({id:catId,shopID:id}, 'categories')
         if(!category){return res.status(404).json({error:'category not found'})}
-        const subcategory = await findData('subcategories', {id:subId, shopID:id})
+        const subcategory = await dbCheck({id:subId, shopID:id}, 'subcategories')
         if(!subcategory){return res.status(404).json({error:'subcategory not found'})}
-        const product = await findData('products', {id:prodId, shopID:id})
+        const product = await getSingleItem({id:prodId}, 'products')
         if(!product){return res.status(404).json({error:'product not found'})}
         const imgName = extractFileNameFromUrl(product.picture)
         const editImg = extractFileNameFromUrl(image);
@@ -140,9 +64,7 @@ const editProduct = async(req,res)=> {
             const imgdelete = await deleteBlob(imgName, 'products')
             if(imgdelete.code == 3){return res.status(500).json(imgdelete.error)}
         }
-        //const searchTags = [category.name, subcategory.name];
-        //const tagsArr = tags.concat(searchTags)
-        //const tagsStr = tagsArr.join(', ');
+      
         const slug = slugify(name);
         const params = {
             name,
@@ -156,12 +78,12 @@ const editProduct = async(req,res)=> {
             featuredHome:fhome,
             featuredCategory: fcat,
             description,
-            options,
+            options:JSON.stringify(options),
             tags,
             offerID: offerId == null ? null : offerId,
             collectionsID:collection === null ? null : collection,
         }
-        const insert = await update(prodId, 'products', params)
+        const insert = await updateData(prodId, params,  'products')
         if(!insert){return res.sendStatus(400)}
         res.status(200).json({message: 'Product updated successfully', code:0, insert})
     }catch(error){
@@ -169,18 +91,115 @@ const editProduct = async(req,res)=> {
     }
 }
 
+const removeFeatured = async(req,res)=> {
+    const {id} = req.params;
+    const {ids} = req.body
+    try{
+        const shop = await getByID(id, 'shops')
+        if(!shop){return res.sendStatus(404)}
+        const edit = await removeMultipleProductsFromFeatured(ids, id)
+        if(!edit){res.sendStatus(500)}
+        //const item = await getSingleItem({id:catid}, 'products');
+        //const response = {id:item.id, name:item.name, slug:item.slug, picture:item.picture, featured:item.featured}
+        res.status(200).json(edit);
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+const addFeatured = async(req,res)=> {
+    const {id} = req.params;
+    const {idsArr} = req.body
+    try{
+        const shop = await getByID(id, 'shops')
+        if(!shop){return res.sendStatus(404)}
+        const edit = await makeMultipleProductsFeatured(idsArr, id)
+        if(!edit){res.sendStatus(500)}
+        //const item = await getSingleItem({id:catid}, 'categories');
+        //const response = {id:item.id, name:item.name, slug:item.slug, picture:item.picture, featured:item.featured}*/
+        res.status(200).json(edit);
+    }catch(error){
+        return res.status(500).json(error)
+    }
+}
+
+
+
+const addProductImg = async(req,res)=> {
+    const {shopId, picture}=req.body;
+    const {id}= req.params;
+    try{
+        const find = await dbCheck({id:id, shopID:shopId}, 'products')
+        if(!find){return res.sendStatus(404)}
+        const shop = await getByID(id, 'shops')
+        if(!shop){return res.sendStatus(404)}
+        const params = {id:generateID(), picture, shopID:shopId, productID:id}
+        const insert = await insertData(params, 'productpictures')
+        res.status(200).json({message:'Image uploaded successfully', code:0, insert})
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+const updateProductImg = async(req, res)=> {
+    const {shopId, productId, picture}= req.body;
+    const {id}=req.params;
+    try{
+        const shop = await getByID(id, 'shops')
+        if(!shop){return res.sendStatus(404)}
+        const product = await dbCheck({id:productId}, 'products')
+        if(!product){return res.sendStatus(404)}
+        const ppic = await getByID(id, 'productpictures')
+        if(!ppic){return res.sendStatus(404)}
+        const blobname = extractFileNameFromUrl(ppic.picture)
+        const deleted = await deleteBlob(blobname, 'products')
+        if(deleted.code == 3){return res.status(500).json(deleted.error)}
+        const data = {picture}
+        const image = await updateData(id, data,  'productpictures',)
+        res.status(200).json({message:'Picture updated', code:0, image})
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+const deleteProductImage = async(req,res)=> {
+    const {shopId, productId}= req.body;
+    const {id}=req.params;
+    try{
+        const shop = await getByID(shopId, 'shops')
+        if(!shop){return res.sendStatus(404)}
+        const product = await getByID(productId, 'products',)
+        const ppic = await findData('productpictures', {id})
+        if(!ppic){return res.sendStatus(404)}
+        const blobname = extractFileNameFromUrl(ppic.picture)
+        const deleted = await deleteBlob(blobname, 'products')
+        if(deleted.code == 3){return res.status(500).json(deleted.error)}
+        if(!product){return res.sendStatus(404)}
+        const deletion = await deleteData(id, 'productpictures')
+        res.status(200).json({message:'Picture deleted successfully', deletion, deleted})
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+
+
 const updateProductsOffer = async(req, res)=> {
     const {shopId, productIds} = req.body
     const {id} = req.params;
     try{
-        const shop = await isEmpty('shops', {id:shopId})
+        const shop = await getByID(shopId, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const offer = await isEmpty('offers', {id:id})
+        const offer = await dbCheck({id, shopID:shopId}, 'offers')
         if(!offer){return res.sendStatus(404)}
-        const params = {offerID:id}
-        const add = await productUpdateMany(productIds, params)
-        if(!add){return res.sendStatus(404)}
-        res.status(200).json({message:'success', add})
+        const response = []
+        const total = productIds.length;
+        await Promise.all(productIds.map(async (item) => {
+            const add = await addProductsToOffer(item, id)
+            response.push(add);
+        }));
+        //if(!add){return res.sendStatus(404)}*/
+        res.status(200).json({message: `${total} products added to offer`, code:0})
     }catch(error){
         return res.status(500).json({error:error.message})
     }
@@ -188,29 +207,30 @@ const updateProductsOffer = async(req, res)=> {
 
 const removeProductsFromOffer = async(req,res)=> {
     const {shopId, productIds}= req.body
-    const {id} = req.params;
     try{
-        const find = await findData('shops', {id:shopId})
+        const find = await getByID(shopId, 'shops')
         if(!find){return res.sendStatus(404)}
-        const offer = await findData('offers', {id})
-        if(!offer){return res.sendStatus(404)}
-        const params = {offerID:null}
-        const removed = productUpdateMany(productIds, params)
-
-        res.status(200).json({message: 'Update successful', removed})
+        await Promise.all(productIds.map(async (item) => {
+            const add = await deleteProductsFromOffer(item)
+        }));
+        const total = productIds.length;
+        res.status(200).json({message: `${total} products removed from offer`, code:0})
     }catch(error){
-        return res.status(500).json({error:error.message})
+        return res.status(500).json(error.message)
     }
 }
 
 const addFeaturedCategoryProducts = async(req,res)=> {
     const {shopId, productIds}= req.body
     try{
-        const find = await findData('shops', {id:shopId})
+        const find = await getByID(shopId, 'shops')
         if(!find){return res.sendStatus(404)}
         const params = {featuredCategory:true}
-        const add = await productUpdateMany(productIds, params);
-        res.status(200).json(add)
+        await Promise.all(productIds.map(async (item) => {
+            const add = await updateData(item, params, 'products');
+        }));
+        //const add = await productUpdateMany(productIds, params);
+        res.status(200).json({message:'success', code:0})
 
     }catch(error){
         return res.status(500).json(error.message)
@@ -220,11 +240,14 @@ const addFeaturedCategoryProducts = async(req,res)=> {
 const removeFeaturedCategoryProducts = async(req,res)=> {
     const {shopId, productIds}= req.body
     try{
-        const find = await findData('shops', {id:shopId})
+        const find = await getByID(shopId, 'shops')
         if(!find){return res.sendStatus(404)}
         const params = {featuredCategory:false}
-        const add = await productUpdateMany(productIds, params);
-        res.status(200).json(add)
+        await Promise.all(productIds.map(async (item) => {
+            const add = await updateData(item, params, 'products');
+        }));
+        //const add = await productUpdateMany(productIds, params);
+        res.status(200).json({message:'success', code:0})
 
     }catch(error){
         return res.status(500).json(error.message)
@@ -234,11 +257,13 @@ const removeFeaturedCategoryProducts = async(req,res)=> {
 const addFeaturedHomeProducts = async(req,res)=> {
     const {shopId, productIds}= req.body
     try{
-        const find = await findData('shops', {id:shopId})
+        const find = await getByID(shopId, 'shops')
         if(!find){return res.sendStatus(404)}
         const params = {featuredHome:true}
-        const add = await productUpdateMany(productIds, params);
-        res.status(200).json(add)
+        await Promise.all(productIds.map(async (item) => {
+            const add = await updateData(item, params, 'products');
+        }));
+        res.status(200).json({message: 'success', code:0})
 
     }catch(error){
         return res.status(500).json(error.message)
@@ -248,32 +273,36 @@ const addFeaturedHomeProducts = async(req,res)=> {
 const removeFeaturedHomeProducts = async(req,res)=> {
     const {shopId, productIds}= req.body
     try{
-        const find = await findData('shops', {id:shopId})
+        const find = await getByID(shopId, 'shops')
         if(!find){return res.sendStatus(404)}
         const params = {featuredHome:false}
-        const add = await productUpdateMany(productIds, params);
-        res.status(200).json(add)
+        await Promise.all(productIds.map(async (item) => {
+            const add = await updateData(item, params, 'products');
+        }));
+        res.status(200).json({message: 'success', code:0})
 
     }catch(error){
         return res.status(500).json(error.message)
     }
 }
 
+
+
 const deleteProducts = async(req, res)=>{
     const {prodId}=req.body;
     const {id}=req.params;
     try{
-        const shop = await findData('shops', {id})
+        const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const product = await findData('products', {id:prodId, shopID:id})
+        const product = await dbCheck({id:prodId, shopID:id}, 'products')
         if(!product){return res.sendStatus(404)}
-        //const blobname = extractFileNameFromUrl(product.picture)
-        //const deleteImg = await deleteBlob(blobname, 'products')
-        //if(deleteImg.code == 3){return res.status(500).json(deleted.error)}
-        //const images = await fetch('productpictures', {productID:id})
-        //const deleted = await deleteImages('products', images)
-        //if(deleted.code == 3){ return res.status(500).json(deleted.error)}
-        const deletion= await deleteItem(prodId, 'products');
+        const blobname = extractFileNameFromUrl(product.picture)
+        const deleteImg = await deleteBlob(blobname, 'products')
+        if(deleteImg.code == 3){return res.status(500).json(deleted.error)}
+        const images = await fetch('productpictures', {productID:id})
+        const deleted = await deleteImages('products', images)
+        if(deleted.code == 3){ return res.status(500).json(deleted.error)}
+        const deletion= await deleteData(prodId, 'products');
         if(!deletion){return res.sendStatus(400)}
         res.status(200).json({message:'Product deleted successfully', code:0 , id:prodId})
 
@@ -287,7 +316,7 @@ const getshopProducts = async(req,res)=> {
     try{
         const pageNumber = parseInt(page )|| 1;
         const params = {shopID:id}
-        const products = await fetchshopProducts(params, pageNumber);
+        const products = await findshopproducts(id, pageNumber);
         return res.status(200).json(products)
 
     }catch(error){
@@ -296,14 +325,14 @@ const getshopProducts = async(req,res)=> {
 }
 
 const searchProducts = async(req,res)=> {
-    const {id,term} = req.query;
+    const {id,term, page} = req.query;
     try{
-        const pageNumber = parseInt(req.query.page )|| 1;
-        const products = await searchshopproducts(term,id,pageNumber);
+        const pageNumber = parseInt(page )|| 1;
+        const products = await searchData(term, 'products', pageNumber, id);
         return res.status(200).json(products)
 
     }catch(error){
-        return res.status(400).json({err: error.message})
+        return res.status(400).json(error)
     }
 }
 
@@ -312,7 +341,7 @@ const getofferProducts = async(req,res)=> {
     try{
         let response = []
         const pageNumber = parseInt(page) || 1;
-        const products = await getOfferProducts(slug, id, pageNumber)
+        const products = await getOfferProducts(id, slug, pageNumber)
         res.status(200).json(products)
     }catch(error){
         return res.status(500).json(error.message)
@@ -322,9 +351,9 @@ const getofferProducts = async(req,res)=> {
 
 
 const getRelatedproducts = async(req,res)=> {
-    const {slug} = req.query;
+    const {id, slug} = req.query;
     try{
-        const products = await getRelatedProducts(slug)
+        const products = await findRelatedProducts(id, slug)
         res.status(200).json(products)
 
     }catch(error){
@@ -337,8 +366,22 @@ const getFeaturedHomeProducts = async(req,res)=> {
     try{
         const pageNumber = parseInt(page) || 1;
         const params = {featuredHome:true, shopID:id}
-        const products = await fetchFeaturedHomeProducts(params, pageNumber)
-        res.status(200).json(products)
+        const products = await getDataByMultipleParams(params, 'products', pageNumber)
+        res.status(200).json(products);
+
+    }catch(error){
+        res.status(500).json(error.message)
+    }
+}
+
+
+
+const getstandardproducts = async(req,res)=> {
+    const {id, page}=req.query;
+    try{
+        const pageNumber = parseInt(page) || 1;
+        const products = await findstandardShopProducts(id, pageNumber)
+        res.status(200).json(products);
 
     }catch(error){
         res.status(500).json(error.message)
@@ -348,9 +391,8 @@ const getFeaturedHomeProducts = async(req,res)=> {
 const getFeaturedCategoryProducts = async(req,res)=> {
     const {id, page, slug} = req.query;
     try{
-        const params =  {category:{slug:slug},featuredCategory:true, shopID:id};
         const pageNumber = parseInt(page) || 1;
-        const products = await fetchFeaturedCategoryProducts(params,pageNumber)
+        const products = await findFeaturedCategoryProducts(id, slug, pageNumber)
         res.status(200).json(products)
 
     }catch(error){
@@ -363,8 +405,7 @@ const getSubcategoryProducts = async(req,res)=> {
     const {id, slug, page} = req.query;
     try{
         const pageNumber = parseInt(page) || 1;
-        const params = {subcategory:{slug:slug},shopID:id};
-        const products = await fetchSubcategoryProducts(params, pageNumber)
+        const products = await findSubcategoryProducts(id, slug, pageNumber)
         let response = []
         products.items.forEach(product=> {
             const item = {
@@ -373,15 +414,15 @@ const getSubcategoryProducts = async(req,res)=> {
                 slug:product.slug,
                 price:product.price,
                 picture:product.picture, 
-                category:product.category, 
-                subcategory:product.subcategory,
+                category:product.categoryName, 
+                subcategory:product.subcategoryName,
                 onsale:product.onSale,
                 saleprice:product.salePrice,
                 discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
             }
             response.push(item)
         })
-        res.status(200).json({total:products.total, totalPages:products.totalPages, response})
+        res.status(200).json({totalPages:products.totalPages, items:response})
 
     }catch(error){
         res.status(500).json(error.message)
@@ -391,16 +432,15 @@ const getSubcategoryProducts = async(req,res)=> {
 const getSingleProduct = async(req,res)=> {
     const {id, slug} = req.query;
     try{
-        const params = {shopID:id, slug}
-        const product = await fetchSingleItem(params)
+        const product = await findSingleProductBySlug(id, slug)
         const item = {
             id:product.id, 
             name:product.name, 
             slug:product.slug,
             price:product.price,
             picture:product.picture, 
-            category:product.category, 
-            subcategory:product.subcategory,
+            category:product.categorySlug, 
+            subcategory:product.subcategorySlug,
             onsale:product.onSale,
             saleprice:product.salePrice,
             discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount),
@@ -414,10 +454,22 @@ const getSingleProduct = async(req,res)=> {
     }
 }
 
+const getCollectionsProducts = async(req,res)=> {
+    const {id, slug, page} = req.query;
+    try{
+        const pageNumber = parseInt(page) || 1;
+        const products = await findCollectionsProducts(id, slug, pageNumber);
+        res.status(200).json(products)
+
+    }catch(error){
+        res.status(500).json(error)
+    }
+}
+
 const getProductImages = async(req,res)=> {
     const {id}=req.params;
     try{
-        const images = await fetch('productpictures', {productID:id})
+        const images = await getDataByParams('productpictures', {productID:id})
         res.status(200).json(images)
 
     }catch(error){
@@ -448,5 +500,10 @@ module.exports = {
     getSingleProduct,
     getProductImages,
     getshopProducts,
-    searchProducts
+    searchProducts,
+    getCollectionsProducts,
+    removeFeatured,
+    addFeatured,
+    getstandardproducts
+    
 }

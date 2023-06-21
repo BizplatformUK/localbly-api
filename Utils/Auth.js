@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt')
-const {findData, countProducts} = require('../config/prisma')
+const {ifExist, countItems, getByID} = require('../config/sqlfunctions')
 require('dotenv').config()
 
 
@@ -52,11 +52,18 @@ function authRole(req,res,next){
         return res.sendStatus(401)
     }
     next()
+}
 
+function userExists(req,res,next){
+    const {number, email} = req.body;
+    const data = {number, email}
+    const user = ifExist(data, 'users');
+    if(user){return res.status(400).json({error:'user already exists', code:3})}
+    next();
 }
 
 async function authAdmin(req,res,next){
-    const user = await findData('users', {userID:req.user.id})
+    const user = await getByID(req.user.id, 'users')
     if(user.token == null && user.status == 3){
         return res.sendStatus(401)
     }
@@ -65,13 +72,13 @@ async function authAdmin(req,res,next){
 
 async function productLimit(req,res,next){
     const {id}=req.params;
-    const shop = await findData('shops', {id})
-    if(shop.version !== 'free'){return next()}
-    const total = await countProducts(id)
-    if(total >= 2){
+    const shop = await getByID(id, 'shops')
+    if(shop.version !== 'Free Trial'){return next()}
+    const total = await countItems(id, 'products')
+    if(total >= 50){
         return res.status(401).json({message: 'Product limit reached upgrade to a premium package to add more products'})
     }
     next()
 }
 
-module.exports = {generateAccessToken, authenticateJwtToken, hashPassword, checkPassword, authRole, authAdmin, productLimit}
+module.exports = {generateAccessToken, userExists, authenticateJwtToken, hashPassword, checkPassword, authRole, authAdmin, productLimit}

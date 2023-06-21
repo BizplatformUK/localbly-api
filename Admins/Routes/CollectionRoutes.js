@@ -11,6 +11,8 @@ router.delete('/delete-collection/:id', authenticateJwtToken, authAdmin, post.de
 
 router.get('/get-collections', post.fetchCollections)
 
+router.post('/add-to-collection/:id', post.addproductsToCollections)
+
 router.get('/get-featured-collections', post.fetchFeaturedCollections)
 
 router.get('/get-unfeatured-collections', post.fetchStandardCollections)

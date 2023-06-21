@@ -9,7 +9,14 @@ router.patch('/edit-offer/:id', authenticateJwtToken, authAdmin, post.editOffers
 
 router.delete('/delete-offer/:id', authenticateJwtToken, authAdmin, post.deleteOffer)
 
-router.get('/get-offers', post.getShopOffers)
+router.patch('/add-to-featured/:id', authenticateJwtToken, authAdmin, post.addToFeatured)
+
+router.delete('/remove-from-featured', authenticateJwtToken, authAdmin, post.removeFeatured)
+
+router.post('/add-to-offers/:id', authenticateJwtToken, authAdmin, post.addProductstoOffers)
+
+router.get('/get-offers',   post.getShopOffers)
+
 
 router.get('/get-past-offers', post.getPastOffers)
 

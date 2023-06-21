@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `shops` ADD COLUMN `brandcolor` VARCHAR(191) NOT NULL DEFAULT '#000000';

@@ -1,13 +1,14 @@
-const {isEmpty, DBInsert, findData, update, deleteItem, fetch, findByShop, search, getFeaturedOffers, bannerPresent} = require('../../config/prisma');
 const {generateID, getAbbreviation, slugify, generateCouponCodes, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {deleteBlob} = require('../Images/ImageController')
+const {insertData, updateData, addMultipleProductsToOffers, deleteData, dbCheck, findFeaturedOffers, getDataByCurrentDate, getDataByDate, getByID, getDataByMultipleParams, searchData, getSingleItem} = require('../../config/sqlfunctions')
+
 const addOffer = async(req,res)=> {
     const {name, img, type, discount, qty, from, to, featured} = req.body
     const {id}=req.params
     try{
-        const shop = await findData('shops', {id})
+        const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const offer = await isEmpty('offers', {name, shopID:id})
+        const offer = await dbCheck({name, shopID:id}, 'offers')
         if(offer){return res.status(400).json({error:'An offer with this name already exists please use a different name', code:3})}
         const slug = slugify(name);
         const abbr = getAbbreviation(name)
@@ -25,12 +26,12 @@ const addOffer = async(req,res)=> {
             featured : featured == null ? false : true,
             shopID:id
         }
-        const insert = await DBInsert('offers', params)
+        const insert = await insertData(params, 'offers')
         if(!insert){return res.sendStatus(404)}
         const response = {id:insert.id, name:insert.name, type:insert.type, featured:insert.featured,  picture:insert.picture, date:insert.createdAt}
         res.status(200).json({message: 'Offer created successfully', code:0, response})
     }catch(error){
-        return res.status(500).json({error: error.message})
+        return res.status(500).json(error)
     }
 }
 
@@ -38,9 +39,9 @@ const editOffers = async(req,res)=> {
     const {offerId, name, img, type, discount, qty, from, to, featured} = req.body
     const {id} = req.params;
     try{
-        const check = await findData('offers', {id:offerId, shopID:id})
+        const check = await dbCheck({id:offerId, shopID:id}, 'offers')
         if(!check){return res.sendStatus(404)}
-        const shop = await findData('shops', {id})
+        const shop = await getByID(id, 'shops',)
         const slug = slugify(name);
         const imgName = extractFileNameFromUrl(check.picture)
         const editImg = extractFileNameFromUrl(img);
@@ -60,10 +61,68 @@ const editOffers = async(req,res)=> {
             validTo: new Date(to),
             featured,
         }
-        const offer = await update(offerId, 'offers', params)
+        const offer = await updateData(offerId, params, 'offers')
         if(!offer){return res.sendStatus(404)}
         const response = {id:offer.id, name:offer.name,  picture:offer.picture, date:offer.createdAt}
         res.status(200).json({message: 'Offer updated successfully', code:0, response})
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+const removeFeatured = async(req,res)=> {
+    const {offid, shopid} = req.query;
+    try{
+        const cat = {id:offid}
+        const category = await getSingleItem(cat,'offers');
+        if(!category){return res.sendStatus(404)}
+        const shop = await getByID(shopid, 'shops')
+        if(!shop){return res.sendStatus(404)}
+        const data = {featured:false}
+        const edit = await updateData(offid, data, 'offers')
+        if(!edit){res.sendStatus(500)}
+        const item = await getSingleItem({id:offid}, 'offers');
+        //const response = {id:item.id, name:item.name, slug:item.slug, picture:item.picture, featured:item.featured}
+        res.status(200).json({message:'offer updated successfully', code:0, item});
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+const addProductstoOffers = async(req,res)=> {
+    const {ids, offid} = req.body;
+    const {id}=req.params;
+    try{
+        const collection = await dbCheck({id:offid, shopID:id}, 'offers')
+        if(!collection){return res.sendStatus(404)}
+        const shop = await getByID(id, 'shops')
+        if(!shop){return res.status(404).json({error: 'shop not found', code:3})}
+       
+        const data = await addMultipleProductsToOffers(ids, offid);
+        if(!data){return res.sendStatus(500)}
+        //const response =  {id:data.id, name:data.name, picture:data.picture, featured:data.featured, date:data.createdAt}
+        res.status(200).json(data)
+
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+const addToFeatured = async(req,res)=> {
+    const {offid} = req.body;
+    const {id}=req.params;
+    try{
+        const cat = {id:offid, shopID:id}
+        const category = await dbCheck(cat,'offers');
+        if(!category){return res.sendStatus(404)}
+        const shop = await getByID(id, 'shops')
+        if(!shop){return res.sendStatus(404)}
+        const data = {featured:true}
+        const edit = await updateData(offid, data, 'offers')
+        if(!edit){res.sendStatus(500)}
+        const item = await getSingleItem({id:offid}, 'offers');
+        //const response = {id:item.id, name:item.name, slug:item.slug, picture:item.picture, featured:item.featured}
+        res.status(200).json({message: 'success', code:0, item});
     }catch(error){
         return res.status(500).json({error:error.message})
     }
@@ -73,12 +132,12 @@ const deleteOffer = async(req,res)=> {
     const {offerId} = req.body;
     const {id} = req.params;
     try{
-        const find = await findData('offers', {id:offerId, shopID:id})
+        const find = await dbCheck({id:offerId, shopID:id}, 'offers')
         if(!find){return res.sendStatus(404)}
         const blobname = extractFileNameFromUrl(find.picture)
         const deleted = await deleteBlob(blobname, 'images')
         if(deleted.code == 3){return res.status(500).json(deleted.error)}
-        const remove = await deleteItem(offerId, 'offers')
+        const remove = await deleteData(offerId, 'offers')
         if(!remove){return res.sendStatus(404)}
         res.status(200).json({message: 'Offer removed successfully', id:offerId, code:0})
     }catch(error){
@@ -92,10 +151,10 @@ const getShopOffers = async(req,res)=> {
         const currentDate = new Date();
         const pageNumber = parseInt(page)|| 1;
         let response = []
-        const params = {shopID:id, validTo:{gte:currentDate}}
-        const offers = await fetch('offers', params, pageNumber) ;
+        const offers = await getDataByCurrentDate(id, 'offers', pageNumber) ;
         await Promise.all(offers.items.map(async (offer) => {
-                const isPresent = await bannerPresent(offer.id, id);
+                const checker = {itemID:offer.id, shopID:id}
+                const isPresent = await dbCheck(checker, 'banner');
                     const item = {
                         id:offer.id, 
                         name:offer.name,
@@ -114,7 +173,7 @@ const getShopOffers = async(req,res)=> {
                     }
                     response.push(item)
         }));
-        return res.status(200).json({total:offers.total, totalPages:offers.totalPages, response, code:0})
+        return res.status(200).json({totalPages:offers.totalPages, items:response})
         
     }catch(error){
         return res.status(500).json(error.message)
@@ -122,14 +181,15 @@ const getShopOffers = async(req,res)=> {
 }
 
 const getPastOffers = async(req,res)=> {
+    const {id, page} = req.query;
     try{
         const currentDate = new Date();
-        const pageNumber = parseInt(req.query.page )|| 1;
+        const pageNumber = parseInt(page )|| 1;
         let response = []
-            const params = {shopID:req.query.id, validTo:{lte:currentDate}}
-            const offers = await fetch('offers', params, pageNumber);
-            await Promise.all(offers.item.map(async (offer) => {
-                const isPresent = await bannerPresent(offer.id, req.query.id);
+            const offers = await getDataByDate(id, 'offers', pageNumber);
+            await Promise.all(offers.items.map(async (offer) => {
+                    const checker = {itemID:offer.id, shopID:id}
+                    const isPresent = await dbCheck(checker, 'banner');
                     const item = {
                         id:offer.id, 
                         name:offer.name, 
@@ -147,21 +207,22 @@ const getPastOffers = async(req,res)=> {
                     }
                     response.push(item)
             }));
-            return res.status(200).json({response:{total:offers.total, data:response}, code:0})
+            return res.status(200).json({totalPages:offers.totalPages, items:response})
     }catch(error){
         return res.status(500).json(error.message)
     }
 }
 
 const filterOffers = async(req,res)=> {
+    const {type, id, page} = req.query;
     try{
-        const query = req.query.type
-        const pageNumber = parseInt(req.query.page )|| 1;
+        const pageNumber = parseInt(page)|| 1;
         let response = []
-            const params = {shopID:req.query.id, type:query}
-            const offers = await fetch('offers', params, pageNumber);
-            await Promise.all(offers.item.map(async (offer) => {
-                const isPresent = await bannerPresent(offer.id, req.query.id);
+            const params = {shopID:id, type}
+            const offers = await getDataByMultipleParams(params, 'offers', pageNumber);
+            await Promise.all(offers.items.map(async (offer) => {
+                    const checker = {itemID:offer.id, shopID:id}
+                    const isPresent = await dbCheck(checker, 'banner');
                     const item = {
                         id:offer.id, 
                         name:offer.name, 
@@ -179,7 +240,7 @@ const filterOffers = async(req,res)=> {
                     }
                     response.push(item)
             }));
-            return res.status(200).json({response:{total:offers.total, data:response}, code:0})
+            return res.status(200).json({totalPages:offers.totalPages, items:response})
          
     }catch(error){
         return res.status(500).json(error.message)
@@ -189,13 +250,12 @@ const filterOffers = async(req,res)=> {
 const getfeaturedOffers = async(req,res)=> {
     const {id, page} = req.query;
     try{
-        const currentDate = new Date();
         const pageNumber = parseInt(page )|| 1;
         let response = []
-            const params = {shopID:id, featured:true,  validTo:{gte:currentDate}}
-            const offers = await fetch('offers', params, pageNumber);
+            const offers = await findFeaturedOffers(id, pageNumber);
             await Promise.all(offers.items.map(async (offer) => {
-                const isPresent = await bannerPresent(offer.id, id);
+                    const checker = {itemID:offer.id, shopID:id}
+                    const isPresent = await dbCheck(checker, 'banner');
                     const item = {
                         id:offer.id, 
                         name:offer.name, 
@@ -213,7 +273,7 @@ const getfeaturedOffers = async(req,res)=> {
                     }
                     response.push(item)
             }));
-            return res.status(200).json({total:offers.total, totalPages:offers.totalPages, response})
+            return res.status(200).json({totalPages:offers.totalPages, items:response})
     }catch(error){
         return res.status(500).json(error.message)
     }
@@ -225,9 +285,10 @@ const searchOffers = async(req,res)=> {
         const id = req.query.id;
         const query = req.query.term;
         let response = []
-            const offers = await search('offers', query, id, pageNumber);
-            await Promise.all(offers.item.map(async (offer) => {
-                const isPresent = await bannerPresent(offer.id, req.query.id);
+            const offers = await searchData(query, 'offers', pageNumber, id);
+            await Promise.all(offers.items.map(async (offer) => {
+                    const checker = {itemID:offer.id, shopID:id}
+                    const isPresent = await dbCheck(checker, 'banner');
                     const item = {
                         id:offer.id, 
                         name:offer.name, 
@@ -245,7 +306,7 @@ const searchOffers = async(req,res)=> {
                     }
                     response.push(item)
             }));
-            return res.status(200).json({response:{total:offers.total, data:response}, code:0})
+            return res.status(200).json({totalPages:offers.totalPages, items:response})
         
         
     }catch(error){
@@ -254,4 +315,4 @@ const searchOffers = async(req,res)=> {
 }
 
 
-module.exports = {addOffer, editOffers, deleteOffer, getShopOffers, getPastOffers, getfeaturedOffers, filterOffers, searchOffers}
+module.exports = {addOffer, addProductstoOffers, addToFeatured, removeFeatured, editOffers, deleteOffer, getShopOffers, getPastOffers, getfeaturedOffers, filterOffers, searchOffers}

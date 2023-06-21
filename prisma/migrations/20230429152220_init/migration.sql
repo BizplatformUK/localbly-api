@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE `shops` ADD COLUMN `email` VARCHAR(191) NOT NULL DEFAULT 'na';
