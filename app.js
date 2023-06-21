@@ -8,7 +8,7 @@ const clients = require('./Admins/Routes/ClientsRoutes')
 const products = require('./Admins/Routes/ProductsRoutes')
 const images = require('./Admins/Images/ImageRoutes')
 const collections = require('./Admins/Routes/CollectionRoutes')
-//const email = require('./Emails/Routes/email')
+const emails = require('./Emails/Routes/EmailRoutes')
 const db = require('./config/sql')
 
 const cors = require('cors');
@@ -44,6 +44,7 @@ app.use('/clients', clients)
 app.use('/products', products)
 app.use('/images', images)
 app.use('/collections', collections)
+app.use('/email', emails)
 
 
 
