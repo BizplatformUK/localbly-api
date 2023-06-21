@@ -9,7 +9,7 @@ trigger:
 variables:
 
   # Azure Resource Manager connection created during pipeline creation
-  azureSubscription: '96360420-1f14-4296-813a-73ddb42c3b96'
+  azureSubscription: '962a4b45-ada4-431e-8283-86b5802866ce'
 
   # Web app name
   webAppName: 'localblyapp'
@@ -32,7 +32,7 @@ stages:
     steps:
     - task: NodeTool@0
       inputs:
-        versionSpec: '18.x'
+        versionSpec: '16.x'
       displayName: 'Install Node.js'
 
     - script: |
@@ -73,6 +73,6 @@ stages:
               azureSubscription: $(azureSubscription)
               appType: webAppLinux
               appName: $(webAppName)
-              runtimeStack: 'NODE|18.10'
+              runtimeStack: 'NODE|16.13'
               package: $(Pipeline.Workspace)/drop/$(Build.BuildId).zip
               startUpCommand: 'npm run start'
