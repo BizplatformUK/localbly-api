@@ -1,7 +1,7 @@
 const { EmailClient } = require("@azure/communication-email");
 
 
-const connectionString = process.env['COMMUNICATION_SERVICES_CONNECTION_STRING'];
+const connectionString = process.env.COMMUNICATION_SERVICES_CONNECTION_STRING;
 let displayName = "localblyRegister"
 
 const emailClient = new EmailClient(connectionString);
