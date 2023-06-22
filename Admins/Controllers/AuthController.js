@@ -299,11 +299,11 @@ const getShopSingleShop = async(req,res)=> {
         res.status(200).json(shop)
 
     }catch(error){
-        res.status(500).json({err:error.message, shop})
+        res.status(500).json(error)
     }
 }
 
-findsingleShop
+
 
 const getShopSingleShopByID = async(req,res)=> {
     const {id} = req.params;
@@ -313,7 +313,7 @@ const getShopSingleShopByID = async(req,res)=> {
         res.status(200).json(shop)
 
     }catch(error){
-        res.status(500).json({err:error.message, shop})
+        res.status(500).json(error)
     }
 }
 

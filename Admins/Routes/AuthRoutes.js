@@ -26,7 +26,7 @@ router.get('/fetch-shop-banner', post.fetchbanner)
 
 router.get('/get-shops', post.getShops)
 
-router.get('/get-single-shop/:id', authenticateJwtToken, authAdmin, post.getShopSingleShopByID)
+router.get('/get-single-shop/:id', /*authenticateJwtToken, authAdmin,*/ post.getShopSingleShopByID)
 
 router.get('/fetch-shop', post.getShopSingleShop)
 
