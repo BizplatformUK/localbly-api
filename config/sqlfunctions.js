@@ -361,7 +361,7 @@ const getData = (table, pageNumber) => {
             totalPages: totalPages,
             items: selectResults
           });
-          db.end();
+          
         });
       });
     });
