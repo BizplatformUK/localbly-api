@@ -22,6 +22,7 @@ async function pollEmailService(receiverEmailAddress, emailSubject,emailMessage)
   }
   const POLLER_WAIT_TIME = 10;
   const poller = await emailClient.beginSend(message);
+  
   return poller;
 }
 

@@ -968,6 +968,24 @@ const findSingleProductBySlug = (id, slug ) => {
   });
 };
 
+const findsingleShop = (id) => {
+  return new Promise((resolve, reject) => {
+    const selectSql = `SELECT s.*, st.name AS shopType
+                         FROM shops s
+                         JOIN shopTypes st ON s.typeID = st.id
+                         WHERE s.ownerID = '${id}'
+                         LIMIT 1`;
+      db.query(selectSql, (selectError, selectResults) => {
+        if (selectError) {
+          reject(selectError);
+          return;
+        }
+
+        resolve(selectResults[0]);
+      });
+  });
+};
+
 const findFeaturedOffers = (id, pageNumber) => {
   const currentDate = new Date();
   const itemsPerPage = 6;
@@ -1217,6 +1235,7 @@ module.exports={
     findfeaturedShopProducts,
     removeMultipleProductsFromFeatured,
     makeMultipleProductsFeatured,
-    findstandardShopProducts
+    findstandardShopProducts,
+    findsingleShop
     
 }

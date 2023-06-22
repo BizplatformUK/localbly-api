@@ -1,7 +1,7 @@
 const {generateID, isValidPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
-const {ifExist, insertData,deleteMultipleItems, deleteData,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {ifExist, insertData,deleteMultipleItems, deleteData, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
 
 const findshop = async(req,res)=> {
@@ -303,6 +303,20 @@ const getShopSingleShop = async(req,res)=> {
     }
 }
 
+findsingleShop
+
+const getShopSingleShopByID = async(req,res)=> {
+    const {id} = req.params;
+    try{
+        const shop = await findsingleShop(id)
+        if(!shop){return res.status(404).json({error:'no shop found', code:4})}
+        res.status(200).json(shop)
+
+    }catch(error){
+        res.status(500).json({err:error.message, shop})
+    }
+}
+
 
 /*const getShopTypes = async(req,res)=> {
     const {slug} = req.params
@@ -376,5 +390,6 @@ module.exports={
     fetchbanner,
     getShops,
     findshop,
-    removeMultiplefromBanner
+    removeMultiplefromBanner,
+    getShopSingleShopByID
 }
