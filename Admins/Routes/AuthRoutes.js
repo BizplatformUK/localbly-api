@@ -18,7 +18,7 @@ router.patch('/update-user/:id', authenticateJwtToken, post.updateuser);
 
 router.post('/add-to-banner/:id', authenticateJwtToken, authAdmin, post.addtoBanner)
 
-router.delete('/remove-from-banner/:id', /*authenticateJwtToken, authAdmin,*/ post.removefromBanner)
+router.delete('/remove-from-banner/:id', authenticateJwtToken, authAdmin, post.removefromBanner)
 
 router.delete('/remove-multiple/:id', post.removeMultiplefromBanner);
 
@@ -26,7 +26,7 @@ router.get('/fetch-shop-banner', post.fetchbanner)
 
 router.get('/get-shops', post.getShops)
 
-router.get('/get-single-shop/:id', post.getShopSingleShopByID)
+router.get('/get-single-shop/:id', authenticateJwtToken, authAdmin, post.getShopSingleShopByID)
 
 router.get('/fetch-shop', post.getShopSingleShop)
 

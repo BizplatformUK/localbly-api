@@ -348,12 +348,7 @@ const getTypes = async(req,res)=> {
     const pageNumber = parseInt(req.query.page )|| 1;
     try{
         const types = await getData('shoptypes', pageNumber);
-        let response = [];
-        types.items.forEach(type=> {
-            const item = {id:type.id, name:type.name, slug:type.slug, picture:type.picture}
-            response.push(item)
-        })
-        res.status(200).json({total:types.total, data:response})
+        res.status(200).json(types)
         
     }catch(error){
         res.status(500).json(error.message)
