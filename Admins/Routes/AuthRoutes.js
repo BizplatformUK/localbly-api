@@ -26,7 +26,7 @@ router.get('/fetch-shop-banner', post.fetchbanner)
 
 router.get('/get-shops', post.getShops)
 
-router.get('/get-single-shop', post.getShopSingleShopByID)
+router.get('/get-single-shop/:id', post.getShopSingleShopByID)
 
 router.get('/fetch-shop', post.getShopSingleShop)
 
