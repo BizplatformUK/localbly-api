@@ -13,6 +13,8 @@ router.get('/get-collections', post.fetchCollections)
 
 router.post('/add-to-collection/:id', post.addproductsToCollections)
 
+router.patch('/edit-collection-featured/:id', authenticateJwtToken, authAdmin, post.editCollectionFeatured)
+
 router.get('/get-featured-collections', post.fetchFeaturedCollections)
 
 router.get('/get-unfeatured-collections', post.fetchStandardCollections)

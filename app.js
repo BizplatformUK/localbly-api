@@ -9,7 +9,7 @@ const products = require('./Admins/Routes/ProductsRoutes')
 const images = require('./Admins/Images/ImageRoutes')
 const collections = require('./Admins/Routes/CollectionRoutes')
 const emails = require('./Emails/Routes/EmailRoutes')
-const db = require('./config/sql')
+
 
 const cors = require('cors');
 require('dotenv').config()
@@ -25,15 +25,11 @@ app.use((req, res, next)=> {
     next()
 })
 
-db.connect((err) => {
-  if (err) {
-    console.error('Error connecting to MySQL:', err);
-    return;
-  }
+
   app.listen(process.env.PORT, ()=> {
     console.log('listening on port 8080')
   })
-});
+
 
 app.use('/shops', Auth)
 app.use('/categories', PostCategories)

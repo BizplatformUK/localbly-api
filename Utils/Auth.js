@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt')
-const {ifExist, countItems, getByID} = require('../config/sqlfunctions')
+const {findSingleUser, totalShopProducts, getByID} = require('../config/sqlfunctions')
 require('dotenv').config()
 
 
@@ -56,8 +56,7 @@ function authRole(req,res,next){
 
 function userExists(req,res,next){
     const {number, email} = req.body;
-    const data = {number, email}
-    const user = ifExist(data, 'users');
+    const user = findSingleUser(email, number);
     if(user){return res.status(400).json({error:'user already exists', code:3})}
     next();
 }
@@ -74,7 +73,7 @@ async function productLimit(req,res,next){
     const {id}=req.params;
     const shop = await getByID(id, 'shops')
     if(shop.version !== 'Free Trial'){return next()}
-    const total = await countItems(id, 'products')
+    const total = await totalShopProducts(id)
     if(total >= 50){
         return res.status(401).json({message: 'Product limit reached upgrade to a premium package to add more products'})
     }

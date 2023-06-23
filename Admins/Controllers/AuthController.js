@@ -1,7 +1,7 @@
 const {generateID, isValidPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
-const {ifExist, insertData,deleteMultipleItems, deleteData, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {ifExist, insertData,deleteMultipleItems, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
 
 const findshop = async(req,res)=> {
@@ -39,9 +39,9 @@ const Register = async(req,res)=> {
 }
 
 const fetchusers = async(req,res)=> {
-    const {number, email} = req.body;
+    //const {number, email} = req.body;
     try{
-        const user = await isEmpty('users', {number:number, email:email})
+        const user = await getUsers()
         res.status(200).json(user)
     }catch(error){
         return res.status(500).json(error.message)
@@ -63,8 +63,7 @@ const getSingleUser = async(req,res)=> {
 const Login = async(req,res)=> {
     const {email, password}=req.body
     try{
-    const params = {email:email}
-    const user = await getSingleItem(params, 'users');
+    const user = await getuserBYEmail(email);
     if(!user){return res.status(404).json({error:'user not found', code:3})}
     const validPassword = await bcrypt.compare(password, user.password)
     if(!validPassword){return res.status(401).json({error:'You entered an incorrect password, please check and try again', code:3})}
@@ -146,12 +145,11 @@ const removeMultiplefromBanner = async(req,res)=> {
     try{
         const find = await getByID(id, 'shops')
         if(!find){return res.status(404).json({error:'item not found', code:3})}
-        const remove = await deleteMultipleItems(ids, 'banner');
-        res.status(200).json({message: 'success', remove})
+        const remove = await deleteMultipleItems(ids, id, 'banner');
+        res.status(200).json({message: 'success', code:0,  response:ids})
     }catch(error){
         return res.status(500).json({error:error.message, code:3})
     }
-    
 }
 
 
@@ -218,6 +216,7 @@ const updateShop = async(req,res)=> {
         return res.status(500).json(error.message)
     }
 }
+
 /*
 const approveAdmin = async(req,res)=> {
     const{id}=req.params
@@ -329,16 +328,11 @@ const getShopSingleShopByID = async(req,res)=> {
     }
 }*/
 
-const getShops = async(req,res)=> {
+const fetchShops = async(req,res)=> {
     const pageNumber = parseInt(req.query.page )|| 1;
     try{
-        const shops = await getData('shops', pageNumber);
-        let response = []
-        shops.items.forEach(shop=> {
-            const item = {id:shop.id, name:shop.name, slug:shop.slug, logo:shop.logo, town:shop.town, location:shop.location, numbers:shop.phoneNumbers, color:shop.brandcolor}
-            response.push(item)
-        })
-        res.status(200).json({totalPages:shops.totalPages, items:response})
+        const shops = await getShops(pageNumber);
+        res.status(200).json(shops)
     }catch(error){
         res.status(500).json(error.message)
     }
@@ -347,7 +341,7 @@ const getShops = async(req,res)=> {
 const getTypes = async(req,res)=> {
     const pageNumber = parseInt(req.query.page )|| 1;
     try{
-        const types = await getData('shoptypes', pageNumber);
+        const types = await getShopTypes(pageNumber);
         res.status(200).json(types)
         
     }catch(error){
@@ -358,7 +352,7 @@ const getTypes = async(req,res)=> {
 const countShopProducts = async(req,res)=> {
     const {id}= req.params;
     try{
-        const total = await countItems(id, 'products')
+        const total = await totalShopProducts(id)
         res.status(200).json(total)
     }catch(error){
         res.status(500).json(error.message)
@@ -383,7 +377,7 @@ module.exports={
     addtoBanner,
     removefromBanner,
     fetchbanner,
-    getShops,
+    fetchShops,
     findshop,
     removeMultiplefromBanner,
     getShopSingleShopByID

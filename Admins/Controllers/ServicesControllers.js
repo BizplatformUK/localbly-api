@@ -9,7 +9,8 @@ const addService = async(req,res)=> {
     try{
         const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const service = await dbCheck({name, shopID:id}, 'services')
+        const items = {name, id}
+        const find = await dbCheck(items, 'services')
         if(service){return res.status(400).json({error: 'A service with this name already exists please use a different name', code:3})}
         const slug = slugify(name)
         const abbr = getAbbreviation(name)
@@ -24,8 +25,8 @@ const addService = async(req,res)=> {
         }
         const insert = await insertData(params, 'services')
         if(!insert){return res.sendStatus(400)}
-        const response = {name:insert.name, price:insert.price, id:insert.id, image:insert.picture}
-        res.status(200).json({message: 'Service uploaded successfully',  code:0, response})
+        //const response = {name:insert.name, price:insert.price, id:insert.id, image:insert.picture}
+        res.status(200).json({message: 'Service uploaded successfully',  code:0, response:insert})
     }catch(error){
         return res.status(500).json(error)
     }
@@ -35,7 +36,7 @@ const editService = async(req,res)=> {
     const {serviceId, name, price, description, image} = req.body;
     const {id}=req.params;
     try{
-        const service = await dbCheck({id:serviceId, shopID:id}, 'services')
+        const service = await getByID(serviceId, 'services')
         if(!service){return res.status(404).json({error: 'service not found', code:3})}
         const shop = await getByID(id, 'shops')
         if(!shop){return res.status(404).json({error: 'shop not found', code:3})}
@@ -56,8 +57,8 @@ const editService = async(req,res)=> {
         }
         const data = await updateData(serviceId, params,  'services')
         if(!data){return res.sendStatus(500)}
-        const response = {id:data.id, name:data.name, picture:data.picture, slug:data.slug, description:data.description}
-        res.status(200).json({message:'service updated successfully', code:0, response})
+        //const response = {id:data.id, name:data.name, picture:data.picture, slug:data.slug, description:data.description}
+        res.status(200).json({message:'service updated successfully', code:0, response:data})
 
     }catch(error){
         return res.status(500).json({error:error.message, code:3})

@@ -1,4 +1,4 @@
-const {insertData, updateData, deleteData, dbCheck, getByID, getDataByMultipleParams, searchData} = require('../../config/sqlfunctions');
+const {insertData, updateData, deleteData, dbCheck, getByID, getshopClients, getDataByMultipleParams, searchData} = require('../../config/sqlfunctions');
 const {generateID, getAbbreviation, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {deleteBlob} = require('../Images/ImageController')
 
@@ -9,7 +9,8 @@ const addClient = async(req,res)=> {
     try{
         const find = await getByID(id, 'shops');
         if(!find){return res.status(404).json({error:'shop not found', code:3})}
-        const check = await dbCheck({shopID:id, name:client}, 'clients')
+        const items = {client, id}
+        const check = await dbCheck(items, 'clients')
         if(check){return res.status(400).json({error: 'A client with this name already exists', code:3})}
         const abbr = getAbbreviation(client)
         const params = {
@@ -21,8 +22,8 @@ const addClient = async(req,res)=> {
         }
         const insert = await insertData(params, 'clients')
         if(!insert){return res.status(400)}
-        const response = {id:insert.id, name:insert.name, logo:insert.logo}
-        res.status(200).json({message: 'Client uploaded successfully', code:0, response})
+        //const response = {id:insert.id, name:insert.name, logo:insert.logo}
+        res.status(200).json({message: 'Client uploaded successfully', code:0, response:insert})
 
     }catch(error){
         return res.status(200).json(error)
@@ -33,7 +34,7 @@ const editClient = async(req,res)=> {
     const {clientId, name, logo} = req.body;
     const {id}=req.params;
     try{
-        const find = await dbCheck({id:clientId, shopID:id}, 'clients')
+        const find = await getByID(clientId, 'clients')
         if(!find){return res.status(404).json({erro:'Shop not found'})}
         const imgName = extractFileNameFromUrl(find.logo)
         const editImg = extractFileNameFromUrl(logo);
@@ -61,7 +62,7 @@ const deleteClient = async(req, res)=> {
         const blobname = extractFileNameFromUrl(find.logo)
         const deleted = await deleteBlob(blobname, 'clients')
         if(deleted.code == 3){return res.status(500).json(deleted.error)}
-        const deletion = await deleteData(clientId, 'clients')
+        const deletion = await deleteData(clientId, id, 'clients')
         if(!deletion){return res.sendStatus(500)}
         res.status(200).json({message: 'Client deleted successfully', id:clientId, code:0})
     }catch(error){
@@ -71,12 +72,9 @@ const deleteClient = async(req, res)=> {
 
 const fetchClients = async(req,res)=> {  
     const {id, page} = req.query;
-    
     try{
-        let response = []
         const pageNumber = parseInt(page)|| 1;
-        const params = {shopID:id, clientType:'Corporate'}
-        const clients = await getDataByMultipleParams(params, 'clients', pageNumber);
+        const clients = await getshopClients(id, 'Corporate', pageNumber);
         return res.status(200).json(clients)
     }catch(error){
         return res.status(500).json(error.message)
@@ -88,16 +86,9 @@ const searchClients = async(req,res)=> {
         const pageNumber = parseInt(req.query.page )|| 1;
         const id = req.query.id;
         const query = req.query.term;
-        let response = []
-            const collections = await searchData(query, 'clients', pageNumber, id);
-            const results = collections.items;
-            results.forEach(collection=> {
-                const item = {id:collection.id, name:collection.name, picture:collection.picture, slug:collection.slug, category:collection.category, date:collection.createdAt}
-                response.push(item)
-            })
-            return res.status(200).json({totalPages:collections.totalPages, data:response})
-        
-       
+        const clients = await searchData(query, 'clients', pageNumber, id);
+        return res.status(200).json({totalPages:clients.totalPages, items:clients.items})
+
     }catch(error){
         res.status(500).json(error.message)
     }

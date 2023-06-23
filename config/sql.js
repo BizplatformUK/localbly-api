@@ -1,8 +1,8 @@
-const mysql = require('mysql');
+const mysql = require('mysql2')
 const fs = require('fs')
 require('dotenv').config()
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host:process.env.SQL_HOST, 
   user:process.env.SQL_USERNAME, 
   password:process.env.SQL_PASSWORD, 
@@ -11,7 +11,7 @@ const db = mysql.createConnection({
   ssl: {
     ca: fs.readFileSync("./DigiCertGlobalRootCA.crt.pem")
   } 
-});
+}).promise();
 
 
 

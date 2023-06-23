@@ -1,1241 +1,860 @@
-const mysql = require('mysql');
 const fs = require('fs')
 const db = require('./sql')
+const { extractFileNameFromUrl } = require('../Utils/Utils')
 require('dotenv').config()
 
-/*const db = mysql.createConnection({
-  host:process.env.SQL_HOST, 
-  user:process.env.SQL_USERNAME, 
-  password:process.env.SQL_PASSWORD, 
-  database:process.env.SQL_DBNAME, 
-  port:process.env.SQL_PORT, 
-  ssl: {
-    ca: fs.readFileSync("./DigiCertGlobalRootCA.crt.pem")
-  }
-});*/
 
-const ifExist = async(data, table)=> {
-    try{
-        return new Promise((resolve, reject)=> {
-            const sql = `SELECT email, number FROM ${table} WHERE email = '${data.email}' AND number = '${data.number}'`
-            db.query(sql, [data.email, data.number], (error, results)=> {
-                if(error){reject (error)}
-                if(results.length > 0){
-                    resolve(true)
-                } else{
-                    resolve(false)
-                }
-               
-            })
-        })
-    }catch(error){
-        return error.message
-    }
-}
+
+
+
 
 const dbCheck = async (data, table) => {
   try {
-    return new Promise((resolve, reject) => {
-      const conditions = Object.keys(data).map(key => `${key} = ?`).join(' AND ');
-      const values = Object.values(data);
-
-      const sql = `SELECT * FROM ${table} WHERE ${conditions}`;
-      db.query(sql, values,  (error, results) => {
-        if (error) {
-          reject(error);
-        }
-        if(results.length > 0){
-          resolve(true)
-        } else{
-            resolve(false)
-        }
-
-      });
-    });
+    const sql = `SELECT * FROM ${table} WHERE name = ? AND shopID = ?`;
+    
+    const [rows] = await db.query(sql, [data.name, data.id])
+    if(rows.length < 1){
+      return false
+    }
+    return rows;
   } catch (error) {
     return error.message;
   }
 };
 
 
-const ifShopExists = async (table, data) => {
+const ifShopExists = async (id) => {
     try {
-      const connection = await db.getConnection();
-      const query = `SELECT * FROM ${model}`;
-      const [rows] = await db.query(query);
+
+      const query = `SELECT * FROM shops WHERE id = ?`;
+      const [rows] = await db.query(query, [id]);
+      if(rows.length < 1){
+        return false
+      }
+      return rows;
+    } catch (error) {
+      return error.message;
+    }
+};
+
+const getByID = async(id,table)=> {
+  try{
+    const sql = `SELECT * FROM ${table} WHERE id = ? LIMIT 1`
+    const [rows] = await db.query(sql, [id]);
+    if(rows.length < 1){
+      return false
+    }
+    return rows[0];
+
+  }catch(error){
+      return error.message
+  }
+}
+
+const getuserBYEmail = async(email)=> {
+  try{
+    const sql = `SELECT * FROM users WHERE email = ? LIMIT 1`
+    const [rows] = await db.query(sql, [email]);
+    if(rows.length < 1){
+      return false
+    }
+    return rows[0];
+
+  }catch(error){
+      return error.message
+  }
+}
+
+const findSingleUser = async(email, number)=> {
+  try{
+    const sql = `SELECT * FROM users WHERE email = ? AND number = ?  LIMIT 1`
+    const [rows] = await db.query(sql, [email, number]);
+    if(rows.length < 1){
+      return false
+    }
+    return rows[0];
+
+  }catch(error){
+      return error.message
+  }
+}
+
+
+const insertData = async(data,table) => {
+  try{
+    let sql = `INSERT INTO ${table} SET ?`;
+    const [results] = await db.query(sql, data)
+    const response = await getByID(data.id, table)
+    return response;
+  } catch(error){
+    return error
+  }
+};
+
+const updateData = async(id, data, table) => {
+    try{
+      let update = `UPDATE ${table} SET ? WHERE id = ?`
+      const [results] = await db.query(update, [data, id])
+      const response = await getByID(id, table)
+      return response;
+    }catch(error){
+      return error;
+    }
   
-      connection.release();
+};
+
+const deleteData = async(id, shopid, table) => {
+  try{
+    let sql = `DELETE FROM ${table} WHERE id = ? AND shopID = ?`;
+    const [results] = await db.query(sql, [id, shopid])
+    if(results){
+      return id
+    }
+  }catch(error){
+    return error
+  }
+ 
+};
+
+const deleteFromBanner = async(id, shopid) => {
+  try{
+    let sql = `DELETE FROM banner WHERE itemID = ? AND shopID = ?`;
+    const [results] = await db.query(sql, [id, shopid])
+    if(results){
+      return id;
+    }
+    
+  }catch(error){
+    console.log(error)
+  }
   
-      return res.status(200).json(rows);
+};
+
+const deleteMultipleItems = async(ids, shopid, table) => {
+  try{
+    const sql = `DELETE FROM ${table} WHERE shopID = ? AND id IN (?)`;
+    const [results] = await db.query(sql, [shopid, ids])
+    return results;
+  }catch(error){
+    return error
+  }
+ 
+};
+
+
+
+const getData = async(table, id, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM ${table} WHERE shopID = ?`;
+    const sql = `SELECT * FROM ${table} WHERE shopID = ? LIMIT ? OFFSET ?`; 
+
+    const [count] = await db.query(countSql, [id])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const getDataByParams = async(data, table, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM ${table} WHERE ?`;
+    const sql = `SELECT * FROM ${table} WHERE ? LIMIT ? OFFSET ?`;
+    const [count] = await db.query(countSql, [data])
+
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [data, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const getBanner = async(slug)=> {
+  try{
+      const sql = `SELECT b.* FROM banner AS b JOIN shops s ON b.shopID = s.id WHERE s.slug = ?`;
+      const [results] = await db.query(sql, [slug])
+      return results
+
+  }catch(error){
+      return error.message
+  }
+}
+
+const isPresentInBanner = async(id, shopid)=> {
+  try{
+      const sql = `SELECT * FROM banner WHERE itemID = ? AND shopID = ? LIMIT 1`;
+      const [results] = await db.query(sql, [id, shopid])
+      if(results.length < 1){
+        return false;
+      }
+      return true
+
+  }catch(error){
+      return error.message
+  }
+}
+
+
+const getSingleItem = async(data,table)=> {
+  try{
+    const sql = `SELECT * FROM ${table} WHERE ? LIMIT 1`
+    const [result] = await db.query(sql, [data])
+    return result[0]
+
+  }catch(error){
+      return error.message
+  }
+}
+
+const findsingleShop = async(id) => {
+  try{
+    const sql = `SELECT s.*, st.name AS shopType
+    FROM shops s
+    JOIN shopTypes st ON s.typeID = st.id
+    WHERE s.ownerID = ?
+    LIMIT 1`;
+
+    const [results] = await db.query(sql, [id])
+    return results[0];
+  }catch(error){
+    return error;
+  }
+  
+};
+
+const getShops = async(pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM shops`;
+    const sql = `SELECT * FROM shops LIMIT ? OFFSET ?`; 
+
+    const [count] = await db.query(countSql)
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const getShopTypes = async(pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM shopTypes`;
+    const sql = `SELECT * FROM shopTypes LIMIT ? OFFSET ?`; 
+
+    const [count] = await db.query(countSql)
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const totalShopProducts = async(id) => {
+  try {
+    const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ?`;
+
+    const [count] = await db.query(countSql, [id])
+    const totalItems = count[0].total
+
+    return totalItems;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+
+const fetchFeaturedShopCategories = async(id, featured, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM categories WHERE shopID = ? AND featured = ?`;
+    const sql = `SELECT * FROM categories WHERE shopID = ? AND featured = ? LIMIT ? OFFSET ?`; 
+
+    const [count] = await db.query(countSql, [id, featured])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [id, featured, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const searchData = async(term, table, pageNumber, id) => {
+  try {
+    const itemsPerPage = 6;
+    const searchTerm = `%${term}%`;
+
+    const countSql = `SELECT COUNT(*) AS total FROM ${table} WHERE name LIKE ? AND shopID = ?`;
+    const sql = `SELECT * FROM ${table} WHERE name LIKE ? AND shopID = ? LIMIT ? OFFSET ?`;
+
+    const [count] = await db.query(countSql, [searchTerm, id])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [searchTerm, id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const filterShopCollections = async(id, featured, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM collections WHERE shopID = ? AND featured = ?`;
+    const sql = `SELECT * FROM collections WHERE shopID = ? AND featured = ? LIMIT ? OFFSET ?`; 
+
+    const [count] = await db.query(countSql, [id, featured])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [id, featured, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const filterProductsNotInCollection = async(id, shopid, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ? AND collectionsID != ?`;
+    const sql = `SELECT * FROM products WHERE shopID = ? AND collectionsID != ? LIMIT ? OFFSET ?`; 
+
+    const [count] = await db.query(countSql, [shopid, id])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [shopid, id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const findCurrentOffers = async(id, pageNumber) => {
+  try{
+    const itemsPerPage = 6;
+
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ?';
+    const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ?';
+
+    const [count] = await db.query(countsql, [id])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+  }catch(error){
+    return error
+  }
+
+  
+};
+
+const findPastOffers = async(id, pageNumber) => {
+  try{
+    const itemsPerPage = 6;
+
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom >= CURDATE() AND validTo <= CURDATE() AND shopID = ?';
+    const sql = 'SELECT * FROM offers WHERE validFrom >= CURDATE() AND validTo <= CURDATE() AND shopID = ?';
+
+    const [count] = await db.query(countsql, [id])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+  }catch(error){
+    return error
+  }
+};
+
+const filterOfferTypes = async(id, type, pageNumber) => {
+  try{
+    const itemsPerPage = 6;
+
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND type = ?';
+    const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND type = ?';
+
+    const [count] = await db.query(countsql, [id, type])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [id, type, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+  }catch(error){
+    return error
+  }
+};
+
+const filterOfferFeatured = async(id, featured, pageNumber) => {
+  try{
+    const itemsPerPage = 6;
+
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND featured = ?';
+    const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND featured = ?';
+
+    const [count] = await db.query(countsql, [id, featured])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [id, featured, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+  }catch(error){
+    return error
+  }
+};
+
+  const addMultipleProductsToCollections = async(ids, colid) => {
+    try{
+      let update = `UPDATE products SET collectionsID = ? WHERE id IN (?)`;
+      const [results] = await db.query(update, [colid, ids])
+      return results;
+    }catch(error){
+      return error;
+    }
+  };
+
+  const addMultipleProductsToOffers = async(ids, shopid, offid) => {
+    try{
+      let update = `UPDATE products SET offerID = ? WHERE shopID = ? AND id IN (?)`;
+      const [results] = await db.query(update, [offid, shopid, ids])
+      return results;
+    }catch(error){
+      return error;
+    }
+    
+  };
+
+  const getshopClients = async(id, type, pageNumber) => {
+    try {
+      const itemsPerPage = 6;
+      const countSql = `SELECT COUNT(*) AS total FROM clients WHERE shopID = ? AND clientType = ?`;
+      const sql = `SELECT * FROM clients WHERE shopID = ? AND clientType = ? LIMIT ? OFFSET ?`; 
+  
+      const [count] = await db.query(countSql, [id, type])
+      const totalItems = count[0].total
+  
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const offset = (pageNumber - 1) * itemsPerPage;
+  
+      const [rows] = await db.query(sql, [id, type, itemsPerPage, offset])
+      const results = {totalPages, items:rows}
+      return results;
+     
     } catch (error) {
       return error.message;
     }
   };
 
+  const toggleProductFeaturedHome= async(ids, featured, shopid) => {
 
-const insertData = (data,table) => {
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-          // Create the query to insert the data into the table
-          let query = `INSERT INTO ${table} SET ?`;
-  
-          // Execute the query and insert the data into the database
-          db.query(query, data, (error, results) => {
-            if (error) {
-              reject({error, code:3});
-            } else {
-                const item = {
-                    id: results.id, // Assuming there's an auto-incrementing ID column
-                    ...data // Merge the original data object with the ID
-                };
-             
-              resolve(item);
-              db.end()
-            }
-
-          });
-  
-          // Close the connection to the database
-    });
-  };
-
-  const updateData = (id, data, table) => {
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-  
-      // Create the query to update the data in the table
-      let update = `UPDATE ${table} SET ? WHERE id = '${id}'`; // Assuming the ID is used to identify the row to be updated
-  
-      // Execute the query and update the data in the database
-      db.query(update, data, (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-            const item = {
-                id:id, // Assuming there's an auto-incrementing ID column
-                ...data // Merge the original data object with the ID
-            };
-          resolve(data);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-
-  const addMultipleProductsToCollections = (ids, colid) => {
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-  
-      // Create the query to update the data in the table
-      let update = `UPDATE products SET collectionsID = ? WHERE id IN (?)`; // Assuming the ID is used to identify the row to be updated
-  
-      // Execute the query and update the data in the database
-      db.query(update, [colid, ids], (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-          const item = {message:"products added to collection", code:0}
-          resolve(item);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-
-  const addMultipleProductsToOffers = (ids, offid) => {
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-  
-      // Create the query to update the data in the table
-      let update = `UPDATE products SET offerID = ? WHERE id IN (?)`; // Assuming the ID is used to identify the row to be updated
-  
-      // Execute the query and update the data in the database
-      db.query(update, [offid, ids], (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-          const item = {message:"products added to offer", code:0}
-          resolve(item);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-
-  const removeMultipleProductsFromFeatured = (ids, shopid) => {
-    const featured = false;
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-  
-      // Create the query to update the data in the table
-      let update = `UPDATE products SET featuredHome = ? WHERE id IN (?) AND shopID = '${shopid}'`; // Assuming the ID is used to identify the row to be updated
-  
-      // Execute the query and update the data in the database
-      db.query(update, [featured, ids], (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-          const item = {message:"products updated successfully", code:0}
-          resolve(item);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-
-  const makeMultipleProductsFeatured = (ids, shopid) => {
-    const featured = true;
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-  
-      // Create the query to update the data in the table
-      let update = `UPDATE products SET featuredHome = ? WHERE id IN (?) AND shopID = '${shopid}'`; // Assuming the ID is used to identify the row to be updated
-  
-      // Execute the query and update the data in the database
-      db.query(update, [featured, ids], (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-          const item = {message:"products updated successfully", code:0, items:ids}
-          resolve(item);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-
-  const addProductsToOffer = (id, offerId) => {
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-  
-      // Create the query to update the data in the table
-      let update = `UPDATE products SET offerID='${offerId}' WHERE id = '${id}'`; // Assuming the ID is used to identify the row to be updated
-  
-      // Execute the query and update the data in the database
-      db.query(update, (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-            
-          resolve(results[0]);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-
-  const deleteProductsFromOffer = (id) => {
-    const remove = null;
-    return new Promise((resolve, reject) => {
-      // Check if the user exists
-  
-      // Create the query to update the data in the table
-      let update = `UPDATE products SET offerID=null WHERE id = '${id}'`; // Assuming the ID is used to identify the row to be updated
-  
-      // Execute the query and update the data in the database
-      db.query(update, (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-          resolve(results);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-  
-  const deleteData = (id, shopid, table) => {
-    return new Promise((resolve, reject) => {
-      // Check if the item exists
-  
-      // Create the query to delete the item from the table
-      let sql = `DELETE FROM ${table} WHERE id = '${id}' AND shopID = '${shopid}'`; // Assuming the ID is used to identify the row to be deleted
-  
-      // Execute the query and delete the item from the database
-      db.query(sql, (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-          //const success = {message: 'Data deleted successfully', code: 0, id};
-          resolve(results);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-
-  const deleteFromBanner = (id, shopid) => {
-    return new Promise((resolve, reject) => {
-      // Check if the item exists
-  
-      // Create the query to delete the item from the table
-      let sql = `DELETE FROM banner WHERE itemID = '${id}' AND shopID = '${shopid}'`; // Assuming the ID is used to identify the row to be deleted
-  
-      // Execute the query and delete the item from the database
-      db.query(sql, (error, results) => {
-        if (error) {
-          reject({ error, code: 3 });
-        } else {
-          const success = {message: 'Data deleted successfully', code: 0, id};
-          resolve(success);
-        }
-      });
-  
-      // Close the connection to the database
-    });
-  };
-  
-  const deleteMultipleItems = (ids, table) => {
-    
-  
-    // Validate the presence of subcategoryIds array in the request body
-    if (!ids || !Array.isArray(ids)) {
-      return  'Invalid subcategoryIds array provided';
-    }
-  
-    // Execute the SQL query to delete subcategories
-    const query = `DELETE FROM ${table} WHERE id IN (?)`;
-  
-    db.query(query, [ids], (error, results) => {
-      if (error) {
-        console.error('Error deleting subcategories:', error);
-        return { error: 'Failed to delete subcategories' };
-      }
-  
-      const affectedRows = results.affectedRows;
-      return { message: `Successfully deleted ${affectedRows} subcategories` };
-    });
-  };
-
-
-
-  const getUsers = async(table)=> {
     try{
-        return new Promise((resolve, reject)=> {
-            const sql = `SELECT * FROM ${table}`
-            db.query(sql, (error, results)=> {
-                if(error){reject (error)}
-                if(results.length < 0){
-                    return resolve(false)
-                }
-                resolve(results)
-                db.end()
-                
-            })
-        })
+      let update = `UPDATE products SET featuredHome = ? WHERE id IN (?) AND shopID = ?`;
+      const [results] = await db.query(update, [featured, ids, shopid])
+      return results;
     }catch(error){
-        return error.message
+      return error
     }
-}
 
+  };
 
-const getData = (table, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM ${table}`;
-      const selectSql = `SELECT * FROM ${table} LIMIT ? OFFSET ?`;
+  const toggleProductFeaturedCategory= async(ids, featured, shopid) => {
+    try{
+      let update = `UPDATE products SET featuredCategory = ? WHERE id IN (?) AND shopID = ?`;
+      const [results] = await db.query(update, [featured, ids, shopid])
+      return results;
+    }catch(error){
+      return error
+    }
 
-      db.query(countSql, (countError, countResult) => {
-        if (countError) {
-          reject(countError);
-        }
-        const totalCount = countResult[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
+  };
 
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
+  const findshopproducts = async(id,  pageNumber) => {
+    try {
+      const itemsPerPage = 6;
+      const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ?`;
+      const sql = `SELECT p.*, sc.name AS subcategory, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS category, pc.name AS collection
+                           FROM products p
+                           JOIN categories c ON p.categoryID = c.id
+                           JOIN subcategories sc on p.subcategoryID = sc.id
+                           JOIN collections pc on p.collectionsID = pc.id
+                           WHERE p.shopID = ?
+                           ORDER BY p.createdAt DESC
+                           LIMIT ? OFFSET ?`;
 
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
+    const [count] = await db.query(countSql, [id])
+    const totalItems = count[0].total
+                       
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+                       
+    const [rows] = await db.query(sql, [id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+    } catch (error) {
+      return error.message;
+    }
+  };
 
-
-
-const getDataByParams = (data, table, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM ${table} WHERE ?`;
-      const selectSql = `SELECT * FROM ${table} WHERE ? LIMIT ? OFFSET ?`;
-
-      db.query(countSql, [data], (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-      
-
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [data, itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-const getSubcategories = (id, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM subcategories WHERE  subcategories.shopID = '${id}'`;
-      const selectSql = `SELECT subcategories.*, categories.slug AS categorySlug, categories.name AS category
-                         FROM subcategories
-                         JOIN categories ON categories.id = subcategories.categoryID
-                         WHERE subcategories.shopID = '${id}'
-                         ORDER BY subcategories.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-        
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-
-const getSubcategoriesByCategorySlug = (slug, id, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM subcategories
-                        JOIN categories ON categories.id = subcategories.categoryID
-                        WHERE categories.slug = '${slug}' AND subcategories.shopID = '${id}'`;
-      const selectSql = `SELECT subcategories.*, categories.slug AS categorySlug, categories.name AS categoryName
-                         FROM subcategories
-                         JOIN categories ON categories.id = subcategories.categoryID
-                         WHERE categories.slug = '${slug}' AND subcategories.shopID = '${id}'
-                         ORDER BY subcategories.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-        
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-
-const getSubcategoriesByCategoryID = (id, catId, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM subcategories
-                        JOIN categories ON categories.id = subcategories.categoryID
-                        WHERE subcategories.categoryID = '${catId}' AND subcategories.shopID = '${id}'`;
-      const selectSql = `SELECT subcategories.*, categories.slug AS categorySlug, categories.name AS categoryName
-                         FROM subcategories
-                         JOIN categories ON categories.id = subcategories.categoryID
-                         WHERE subcategories.categoryID = '${catId}' AND subcategories.shopID = '${id}'
-                         ORDER BY subcategories.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-      
-
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-const getDataByMultipleParams = (data, table, pageNumber) => {
-  const itemsPerPage = 6;
-
-  return new Promise((resolve, reject) => {
-    const conditions = Object.keys(data).map(key => `${key} = ?`).join(' AND ');
-    const values = Object.values(data);
-
-    const countSql = `SELECT COUNT(*) AS totalCount FROM ${table} WHERE ${conditions}`;
-    const selectSql = `SELECT * FROM ${table} WHERE ${conditions} LIMIT ? OFFSET ?`;
-
-    db.query(countSql, values, (countError, countResults) => {
-      if (countError) {
-        reject(countError);
-        return;
-      }
-
-      const totalCount = countResults[0].totalCount;
-      const totalPages = Math.ceil(totalCount / itemsPerPage);
+const getOfferProducts = async(id, slug, pageNumber) => {
+    try {
+      const itemsPerPage = 6;
+      const countSql = `SELECT COUNT(*) AS total FROM products
+                          JOIN offers ON offers.id = products.offerID
+                          WHERE offers.slug = ? AND products.shopID = ?`;
+      const sql = `SELECT products.*, offers.slug AS offerSlug, offers.name AS offerName
+                           FROM products
+                           JOIN offers ON offers.id = products.offerID
+                           WHERE offers.slug = ? AND products.shopID = ?
+                           ORDER BY products.createdAt DESC
+                           LIMIT ? OFFSET ?`;
+      const [count] = await db.query(countSql, [slug, id])
+      const totalItems = count[0].total
+                                              
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
       const offset = (pageNumber - 1) * itemsPerPage;
+                                              
+      const [rows] = await db.query(sql, [slug, id, itemsPerPage, offset])
+      const results = {totalPages, items:rows} 
+      return results                   
+    } catch (error) {
+      return error.message;
+    }
+  };
 
-      db.query(selectSql, [...values, itemsPerPage, offset], (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
+const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
+    try {
+      const itemsPerPage = 6;
+      const countSql = `SELECT COUNT(*) AS total FROM products WHERE featuredHome = ? AND shopID = ?`;
+      const sql = `SELECT * FROM products WHERE featuredHome = ? AND shopID = ? ORDER BY products.createdAt DESC LIMIT ? OFFSET ?`;
 
-        resolve({
-          totalPages: totalPages,
-          items: selectResults
-        });
-      });
-    });
-  });
-};
+      const [count] = await db.query(countSql, [featured, id])
+      const totalItems = count[0].total
+                                              
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const offset = (pageNumber - 1) * itemsPerPage;
+                                              
+      const [rows] = await db.query(sql, [featured, id, itemsPerPage, offset])
+      const results = {totalPages, items:rows} 
+      return results                   
+    } catch (error) {
+      return error.message;
+    }
+  };
 
+  const findFeaturedCategoryProducts = async(id, slug, featured, pageNumber) => {
 
-const getDataByDate = (id, table, pageNumber) => {
-  const currentDate = new Date();
-  const itemsPerPage = 6;
+    try {
+      const itemsPerPage = 6;
+      const countSql = `SELECT COUNT(*) AS total FROM products
+                          JOIN categories ON categories.id = products.categoryID
+                          WHERE categories.slug = ? AND products.shopID = ? AND products.featuredCategory = ?`;
+      const sql = `SELECT products.*, categories.slug AS categorySlug, categories.name AS categoryName
+                           FROM products
+                           JOIN categories ON categories.id = products.categoryID
+                           WHERE categories.slug = ? AND products.shopID = ? AND products.featuredCategory = ? 
+                           ORDER BY products.createdAt DESC
+                           LIMIT ? OFFSET ?`;
+            
+    const [count] = await db.query(countSql, [slug, id, featured])
+    const totalItems = count[0].total
+                                                                   
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+                                                                   
+    const [rows] = await db.query(sql, [slug, id, featured, itemsPerPage, offset])
+    const results = {totalPages, items:rows} 
+    return results
+    } catch (error) {
+      return error.message;
+    }
+  };
 
-  return new Promise((resolve, reject) => {
+  const findSubcategoryProducts = async(id, slug, pageNumber) => {
+    try {
+      const itemsPerPage = 6;
+      const countSql = `SELECT COUNT(*) AS total FROM products p
+                          JOIN categories c ON p.categoryID = c.id
+                          JOIN subcategories sc on p.subcategoryID = sc.id
+                          WHERE sc.slug = ? AND p.shopID = ?`;
+        const sql = `SELECT p.*, sc.name AS subcategoryName, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS categoryName
+                           FROM products p
+                           JOIN categories c ON p.categoryID = c.id
+                           JOIN subcategories sc on p.subcategoryID = sc.id
+                           WHERE sc.slug = ? AND p.shopID = ?
+                           ORDER BY p.createdAt DESC
+                           LIMIT ? OFFSET ?`;
+
+      const [count] = await db.query(countSql, [slug, id])
+      const totalItems = count[0].total
+                                                                                          
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const offset = (pageNumber - 1) * itemsPerPage;
+                                                                                          
+      const [rows] = await db.query(sql, [slug, id, itemsPerPage, offset])
+      const results = {totalPages, items:rows}
+      return results;                
+     
+    } catch (error) {
+      return error.message;
+    }
+  };
+
+const findSingleProductBySlug = async(id, slug ) => {
+    try{
+      const sql = `SELECT p.*, sc.name AS subcategoryName, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS categoryName
+                           FROM products p
+                           JOIN categories c ON p.categoryID = c.id
+                           JOIN subcategories sc on p.subcategoryID = sc.id
+                           WHERE p.slug = ? AND p.shopID = ?
+                           LIMIT 1`;
+    const [results] = await db.query(sql, [slug, id])
+    return results[0];
+    }catch(error){
+      return error;
+    }
    
-
-    const countSql = `SELECT COUNT(*) AS totalCount FROM ${table} WHERE shopID = '${id}' AND validTo > '${currentDate}'`;
-    const selectSql = `SELECT * FROM ${table} WHERE shopID = '${id}' AND validTo > '${currentDate}' LIMIT ? OFFSET ?`;
-
-    db.query(countSql, (countError, countResults) => {
-      if (countError) {
-        reject(countError);
-        return;
-      }
-
-      const totalCount = countResults[0].totalCount;
-      const totalPages = Math.ceil(totalCount / itemsPerPage);
-      const offset = (pageNumber - 1) * itemsPerPage;
-
-      db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
-
-        resolve({
-          totalPages: totalPages,
-          items: selectResults
-        });
-      });
-    });
-  });
 };
 
-const getDataByCurrentDate = (id, table, pageNumber) => {
-  const currentDate = new Date();
-  const itemsPerPage = 6;
-
-  return new Promise((resolve, reject) => {
-   
-
-    const countSql = `SELECT COUNT(*) AS totalCount FROM ${table} WHERE shopID = '${id}' AND validTo < '${currentDate}'`;
-    const selectSql = `SELECT * FROM ${table} WHERE shopID = '${id}' AND validTo < '${currentDate}' LIMIT ? OFFSET ?`;
-
-    db.query(countSql, (countError, countResults) => {
-      if (countError) {
-        reject(countError);
-        return;
-      }
-
-      const totalCount = countResults[0].totalCount;
-      const totalPages = Math.ceil(totalCount / itemsPerPage);
-      const offset = (pageNumber - 1) * itemsPerPage;
-
-      db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
-
-        resolve({
-          totalPages: totalPages,
-          items: selectResults
-        });
-      });
-    });
-  });
-};
-
-
-const getOfferProducts = (id, slug, pageNumber) => {
+const findCollectionsProducts = async(id, slug, pageNumber) => {
   try {
     const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM products
-                        JOIN offers ON offers.id = products.offerID
-                        WHERE offers.slug = '${slug}' AND products.shopID = '${id}'`;
-      const selectSql = `SELECT products.*, offers.slug AS offerSlug, offers.name AS offerName
-                         FROM products
-                         JOIN offers ON offers.id = products.offerID
-                         WHERE offers.slug = '${slug}' AND products.shopID = '${id}'
-                         ORDER BY products.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-       
-
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-
-const findFeaturedCategoryProducts = (id, slug, pageNumber) => {
-  const featured = true;
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM products
-                        JOIN categories ON categories.id = products.categoryID
-                        WHERE categories.slug = '${slug}' AND products.shopID = '${id}' AND products.featuredCategory =1`;
-      const selectSql = `SELECT products.*, categories.slug AS categorySlug, categories.name AS categoryName
-                         FROM products
-                         JOIN categories ON categories.id = products.categoryID
-                         WHERE categories.slug = '${slug}' AND products.shopID = '${id}' AND products.featuredCategory =1 
-                         ORDER BY products.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-       
-
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-const findshopproducts = (id,  pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM products WHERE shopID = '${id}'`;
-      const selectSql = `SELECT p.*, sc.name AS subcategory, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS category, pc.name AS collection
-                         FROM products p
-                         JOIN categories c ON p.categoryID = c.id
-                         JOIN subcategories sc on p.subcategoryID = sc.id
-                         JOIN collections pc on p.collectionsID = pc.id
-                         WHERE p.shopID = '${id}'
-                         ORDER BY p.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults,
-            total:totalCount
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-const findfeaturedShopProducts = (id, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM products WHERE shopID = '${id}'`;
-      const selectSql = `SELECT p.*, sc.name AS subcategory, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS category, pc.name AS collection
-                         FROM products p
-                         JOIN categories c ON p.categoryID = c.id
-                         JOIN subcategories sc on p.subcategoryID = sc.id
-                         JOIN collections pc on p.collectionsID = pc.id
-                         WHERE p.shopID = '${id}' AND featuredHome = 1
-                         ORDER BY p.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-const findstandardShopProducts = (id, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM products WHERE shopID = '${id}'`;
-      const selectSql = `SELECT p.*, sc.name AS subcategory, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS category, pc.name AS collection
-                         FROM products p
-                         JOIN categories c ON p.categoryID = c.id
-                         JOIN subcategories sc on p.subcategoryID = sc.id
-                         JOIN collections pc on p.collectionsID = pc.id
-                         WHERE p.shopID = '${id}' AND featuredHome = 0
-                         ORDER BY p.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults,
-            total:totalCount
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-
-const findSubcategoryProducts = (id, slug, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM products p
-                        JOIN categories c ON p.categoryID = c.id
-                        JOIN subcategories sc on p.subcategoryID = sc.id
-                        WHERE sc.slug = '${slug}' AND p.shopID = '${id}'`;
-      const selectSql = `SELECT p.*, sc.name AS subcategoryName, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS categoryName
-                         FROM products p
-                         JOIN categories c ON p.categoryID = c.id
-                         JOIN subcategories sc on p.subcategoryID = sc.id
-                         WHERE sc.slug = '${slug}' AND p.shopID = '${id}'
-                         ORDER BY p.createdAt DESC
-                         LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
-  } catch (error) {
-    return error.message;
-  }
-};
-
-const findCollectionsProducts = (id, slug, pageNumber) => {
-  try {
-    const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM products p
+    const countSql = `SELECT COUNT(*) AS total FROM products p
                         JOIN collections c ON p.collectionsID = c.id
-                        WHERE c.slug = '${slug}' AND p.shopID = '${id}'`;
-      const selectSql = `SELECT p.*, c.name AS collectionName, c.slug AS collectionSlug, pc.name AS categoryName, pc.slug AS categorySlug, sc.name AS subcategoryName,sc.slug AS subcategorySlug
+                        WHERE c.slug = ? AND p.shopID = ?`;
+    const sql = `SELECT p.*, c.name AS collectionName, c.slug AS collectionSlug, pc.name AS categoryName, pc.slug AS categorySlug, sc.name AS subcategoryName,sc.slug AS subcategorySlug
                          FROM products p
                          JOIN collections c ON p.collectionsID = c.id
                          JOIN categories pc ON p.categoryID = pc.id
                          JOIN subcategories sc ON p.subcategoryID = sc.id
-                         WHERE c.slug = '${slug}' AND p.shopID = '${id}'
+                         WHERE c.slug = ? AND p.shopID = ?
                          ORDER BY p.createdAt DESC
                          LIMIT ? OFFSET ?`;
-
-      db.query(countSql, (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-          if (selectError) {
-            reject(selectError);
-          }
-
-          resolve({
-            totalPages: totalPages,
-            items: selectResults
-          });
-          
-        });
-      });
-    });
+  const [count] = await db.query(countSql, [slug, id])
+  const totalItems = count[0].total
+                                                                                                             
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const offset = (pageNumber - 1) * itemsPerPage;
+                                                                                                             
+  const [rows] = await db.query(sql, [slug, id, itemsPerPage, offset])
+  const results = {totalPages, items:rows}
+  return results;                  
   } catch (error) {
     return error.message;
   }
 };
 
-const findRelatedProducts = (id, slug) => {
-  return new Promise((resolve, reject) => {
-    const selectSql = `SELECT p.* FROM products p JOIN categories c on p.categoryID = c.id WHERE c.id =(SELECT categoryID from products WHERE slug = '${slug}')
-    AND p.slug != '${slug}' AND p.shopID = '${id}' ORDER BY p.createdAT DESC LIMIT 4`;
-      db.query(selectSql, (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
-
-        resolve(selectResults);
-      });
-  });
+const findRelatedProducts = async(id, slug) => {
+  try{
+    const sql = `SELECT p.* FROM products p JOIN categories c on p.categoryID = c.id WHERE c.id =(SELECT categoryID from products WHERE slug = '${slug}')
+    AND p.slug != ? AND p.shopID = ? ORDER BY p.createdAT DESC LIMIT 4`;
+    const [results] = await db.query(sql, [slug, id])
+    return results;
+  }catch(error){
+    return error
+  }
+ 
 };
 
-
-const findSingleProductBySlug = (id, slug ) => {
-  return new Promise((resolve, reject) => {
-    const selectSql = `SELECT p.*, sc.name AS subcategoryName, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS categoryName
-                         FROM products p
-                         JOIN categories c ON p.categoryID = c.id
-                         JOIN subcategories sc on p.subcategoryID = sc.id
-                         WHERE p.slug = '${slug}' AND p.shopID = '${id}'
-                         LIMIT 1`;
-      db.query(selectSql, (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
-
-        resolve(selectResults[0]);
-      });
-  });
+const getUsers = async() => {
+    try {
+      const sql = `SELECT COUNT(*) AS totalCount FROM users`;
+      const [rows] = await db.query(sql);
+      return rows
+    } catch (error) {
+      throw error;
+    }
 };
+  
 
-const findsingleShop = (id) => {
-  return new Promise((resolve, reject) => {
-    const selectSql = `SELECT s.*, st.name AS shopType
-                         FROM shops s
-                         JOIN shopTypes st ON s.typeID = st.id
-                         WHERE s.ownerID = '${id}'
-                         LIMIT 1`;
-      db.query(selectSql, (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
-
-        resolve(selectResults[0]);
-      });
-  });
-};
-
-const findFeaturedOffers = (id, pageNumber) => {
-  const currentDate = new Date();
-  const itemsPerPage = 6;
-  const featured = true;
-
-  return new Promise((resolve, reject) => {
-   
-
-    const countSql = `SELECT COUNT(*) AS totalCount FROM offers WHERE shopID = '${id}' AND featured= '${featured}' AND validTo > '${currentDate}'`;
-    const selectSql = `SELECT * FROM offers WHERE shopID = '${id}' AND featured= '${featured}' AND validTo > '${currentDate}' LIMIT ? OFFSET ?`;
-
-    db.query(countSql, (countError, countResults) => {
-      if (countError) {
-        reject(countError);
-        return;
-      }
-
-      const totalCount = countResults[0].totalCount;
-      const totalPages = Math.ceil(totalCount / itemsPerPage);
-      const offset = (pageNumber - 1) * itemsPerPage;
-
-      db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
-
-        resolve({
-          totalPages: totalPages,
-          items: selectResults
-        });
-      });
-    });
-  });
-};
-
-const findNomalOffers = (id, pageNumber) => {
-  const currentDate = new Date();
-  const itemsPerPage = 6;
-  const featured = false;
-
-  return new Promise((resolve, reject) => {
-   
-
-    const countSql = `SELECT COUNT(*) AS totalCount FROM offers WHERE shopID = '${id}' AND featured= '${featured}' AND validTo > '${currentDate}'`;
-    const selectSql = `SELECT * FROM offers WHERE shopID = '${id}' AND featured= '${featured}' AND validTo > '${currentDate}' LIMIT ? OFFSET ?`;
-
-    db.query(countSql, (countError, countResults) => {
-      if (countError) {
-        reject(countError);
-        return;
-      }
-
-      const totalCount = countResults[0].totalCount;
-      const totalPages = Math.ceil(totalCount / itemsPerPage);
-      const offset = (pageNumber - 1) * itemsPerPage;
-
-      db.query(selectSql, [itemsPerPage, offset], (selectError, selectResults) => {
-        if (selectError) {
-          reject(selectError);
-          return;
-        }
-
-        resolve({
-          totalPages: totalPages,
-          items: selectResults
-        });
-      });
-    });
-  });
-};
-
-
-const searchData = (term, table, pageNumber, id) => {
+const getSubcategoriesByCategorySlug = async(slug, id, pageNumber) => {
   try {
     const itemsPerPage = 6;
-    return new Promise((resolve, reject) => {
-      const countSql = `SELECT COUNT(*) AS totalCount FROM ${table} WHERE name LIKE ? AND shopID = ?`;
-      const selectSql = `SELECT * FROM ${table} WHERE name LIKE ? AND shopID = ? LIMIT ? OFFSET ?`;
-
-      const searchTerm = `%${term}%`; // Adding wildcard characters to search for partial matches
-
-      db.query(countSql, [searchTerm, id], (countError, countResults) => {
-        if (countError) {
-          reject(countError);
-        }
-
-        const totalCount = countResults[0].totalCount;
-        const totalPages = Math.ceil(totalCount / itemsPerPage);
-        const offset = (pageNumber - 1) * itemsPerPage;
-
-        db.query(
-          selectSql,
-          [searchTerm, id, itemsPerPage, offset],
-          (selectError, selectResults) => {
-            if (selectError) {
-              reject(selectError);
-            }
-
-            resolve({
-              totalPages: totalPages,
-              items: selectResults,
-            });
-          }
-        );
-      });
-    });
+    const countSql = `SELECT COUNT(*) AS total FROM subcategories
+                        JOIN categories ON categories.id = subcategories.categoryID
+                        WHERE categories.slug = ? AND subcategories.shopID = ?`;
+      const sql = `SELECT subcategories.*, categories.slug AS categorySlug, categories.name AS categoryName
+                         FROM subcategories
+                         JOIN categories ON categories.id = subcategories.categoryID
+                         WHERE categories.slug = ? AND subcategories.shopID = ?
+                         ORDER BY subcategories.createdAt DESC
+                         LIMIT ? OFFSET ?`;
+    const [count] = await db.query(countSql, [slug, id])
+    const totalItems = count[0].total
+                                                                                                                                    
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+                                                                                                                                    
+    const [rows] = await db.query(sql, [slug, id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;               
   } catch (error) {
     return error.message;
   }
 };
 
 
-
-const getBanner = (slug)=> {
-  try{
-      return new Promise((resolve, reject)=> {
-        const sql = `SELECT b.* FROM banner AS b JOIN shops AS s ON b.shopID = s.id WHERE s.slug = ?`;
-          db.query(sql, [slug], (error, results)=> {
-              if(error){reject (error)}
-              if(results.length < 0){
-                  return resolve(false)
-              }
-              resolve(results)
-              db.end();
-          })
-      })
-
-  }catch(error){
-      return error.message
+const getSubcategoriesByCategoryID = async(id, catId, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM subcategories
+                        JOIN categories ON categories.id = subcategories.categoryID
+                        WHERE categories.id = ? AND subcategories.shopID = ?`;
+      const sql = `SELECT subcategories.*, categories.slug AS categorySlug, categories.name AS categoryName
+                         FROM subcategories
+                         JOIN categories ON categories.id = subcategories.categoryID
+                         WHERE categories.id = ? AND subcategories.shopID = ?
+                         ORDER BY subcategories.createdAt DESC
+                         LIMIT ? OFFSET ?`;
+     const [count] = await db.query(countSql, [catId, id])
+     const totalItems = count[0].total
+                                                                                                                                                         
+     const totalPages = Math.ceil(totalItems / itemsPerPage);
+     const offset = (pageNumber - 1) * itemsPerPage;
+                                                                                                                                                         
+      const [rows] = await db.query(sql, [catId, id, itemsPerPage, offset])
+     const results = {totalPages, items:rows}
+      return results;                      
+    
+  } catch (error) {
+    return error.message;
   }
-}
+};
 
-const countItems = (id, table)=> {
-  try{
-      return new Promise((resolve, reject)=> {
-          const countSql = `SELECT COUNT(*) AS totalCount FROM ${table} WHERE shopID=  '${id}'`;
-          db.query(countSql, (countError, countResults)=> {
-              if(countError){reject (countError)}
-              
-              const totalCount = countResults[0].totalCount;
-              resolve(totalCount)
-              db.end();
-          })
-      })
 
-  }catch(error){
-      return error.message
+const fetchShopSubcategories = async(id, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const countSql = `SELECT COUNT(*) AS total FROM subcategories WHERE shopID = ?`;
+    const sql = `SELECT subcategories.*, categories.slug AS categorySlug, categories.name AS category
+                         FROM subcategories
+                         JOIN categories ON categories.id = subcategories.categoryID
+                         WHERE subcategories.shopID = ?
+                         ORDER BY subcategories.createdAt DESC
+                         LIMIT ? OFFSET ?`;
+     const [count] = await db.query(countSql, [id])
+     const totalItems = count[0].total
+                                                                                                                                                         
+     const totalPages = Math.ceil(totalItems / itemsPerPage);
+     const offset = (pageNumber - 1) * itemsPerPage;
+                                                                                                                                                         
+      const [rows] = await db.query(sql, [id, itemsPerPage, offset])
+     const results = {totalPages, items:rows}
+      return results;                      
+    
+  } catch (error) {
+    return error.message;
   }
-}
+};
 
-const getByID = (id,table)=> {
-    try{
-        return new Promise((resolve, reject)=> {
-            const sql = `SELECT * FROM ${table} WHERE id = '${id}'`
-            db.query(sql, (error, results)=> {
-                if(error){reject (error)}
-                if(results.length < 0){
-                    return resolve(false)
-                }
-                resolve(results[0])
-            })
-        })
-
-    }catch(error){
-        return error.message
-    }
-}
-
-const getSingleItem = (data,table)=> {
-  try{
-      return new Promise((resolve, reject)=> {
-          const sql = `SELECT * FROM ${table} WHERE ? LIMIT 1`
-          db.query(sql, data, (error, results)=> {
-              if(error){reject (error)}
-              if(results.length < 0){
-                  return resolve(false)
-              }
-              resolve(results[0])
-          })
-      })
-
-  }catch(error){
-      return error.message
-  }
-}
-
-const getUserById = (data)=>{
-    try{
-        return new Promise((resolve, reject)=> {
-            const sql = `SELECT * FROM users WHERE userID = '${data.id}'`
-            db.query(sql, (error, results)=> {
-                if(error){reject (error)}
-                if(!results){
-                    return resolve(false)
-                }
-                resolve(results[0])
-            })
-        })
-
-    }catch(error){
-        return error.message
-    }
-}
-  
-  
-  
-  
 
 module.exports={
     insertData, 
-    ifExist, 
     getUsers, 
     getByID, 
     getData, 
     ifShopExists,
-    getUserById,
     updateData,
     getBanner,
     deleteData,
     getSingleItem,
     getDataByParams,
-    countItems,
     dbCheck,
-    getDataByMultipleParams,
     searchData,
-    getDataByDate,
-    getDataByCurrentDate,
-    findFeaturedOffers,
-    findNomalOffers,
+    findPastOffers,
+    findCurrentOffers,
     getSubcategoriesByCategorySlug,
     getSubcategoriesByCategoryID,
-    addProductsToOffer,
-    deleteProductsFromOffer,
     getOfferProducts,
     findRelatedProducts,
     findFeaturedCategoryProducts,
     findSubcategoryProducts,
     findSingleProductBySlug,
     findCollectionsProducts,
-    getSubcategories,
     deleteMultipleItems,
     deleteFromBanner,
     addMultipleProductsToCollections,
     addMultipleProductsToOffers,
     findshopproducts,
-    findfeaturedShopProducts,
-    removeMultipleProductsFromFeatured,
-    makeMultipleProductsFeatured,
-    findstandardShopProducts,
-    findsingleShop
+    toggleProductFeaturedHome,
+    findsingleShop,
+    getuserBYEmail,
+    getShops,
+    getShopTypes,
+    totalShopProducts,
+    isPresentInBanner,
+    fetchFeaturedShopCategories,
+    filterShopCollections,
+    filterOfferTypes,
+    filterOfferFeatured,
+    getshopClients,
+    toggleProductFeaturedCategory,
+    fetchFeaturedHomeProducts,
+    findSingleUser,
+    fetchShopSubcategories,
+    filterProductsNotInCollection
     
 }

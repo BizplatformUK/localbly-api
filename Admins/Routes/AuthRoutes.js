@@ -10,7 +10,7 @@ router.post('/register', userExists, post.Register)
 
 router.post('/login', post.Login)
 
-router.post('/fetch', post.fetchusers)
+router.get('/fetch', post.fetchusers)
 
 router.get('/fetch-user/:id', post.getSingleUser)
 
@@ -24,7 +24,7 @@ router.delete('/remove-multiple/:id', post.removeMultiplefromBanner);
 
 router.get('/fetch-shop-banner', post.fetchbanner)
 
-router.get('/get-shops', post.getShops)
+router.get('/get-shops', post.fetchShops)
 
 router.get('/get-single-shop/:id', /*authenticateJwtToken, authAdmin,*/ post.getShopSingleShopByID)
 

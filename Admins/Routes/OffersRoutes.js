@@ -13,7 +13,7 @@ router.patch('/add-to-featured/:id', authenticateJwtToken, authAdmin, post.addTo
 
 router.delete('/remove-from-featured', authenticateJwtToken, authAdmin, post.removeFeatured)
 
-router.post('/add-to-offers/:id', authenticateJwtToken, authAdmin, post.addProductstoOffers)
+router.post('/add-to-offers/:id', /*authenticateJwtToken, authAdmin,*/ post.addProductstoOffers)
 
 router.get('/get-offers',   post.getShopOffers)
 

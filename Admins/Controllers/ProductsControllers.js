@@ -1,19 +1,20 @@
 const {generateID, getAbbreviation, slugify, getDiscountPrice, extractFileNameFromUrl,  compareStrings} = require('../../Utils/Utils');
 const {deleteBlob, deleteImages} = require('../Images/ImageController')
-const {insertData, updateData, makeMultipleProductsFeatured, findstandardShopProducts, removeMultipleProductsFromFeatured, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
+const {insertData, updateData, filterProductsNotInCollection, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
 
 
 const addProduct = async(req,res)=> {
     const {name, catId, subId, image, price, onSale, salePrice, fhome, fcat, description, options, tags, offerId, collection} = req.body
     const {id}=req.params
     try{
-        const product = await dbCheck({name, shopID:id}, 'products')
-        if(product){return res.status(400).json({error:'A product with this name already exists', code:3})}
+        const items = {name, id}
+        const find = await dbCheck(items, 'products')
+        if(find){return res.status(400).json({error:'A product with this name already exists', code:3})}
         const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const category = await dbCheck({id:catId, shopID:id}, 'categories')
+        const category = await getByID(catId, 'categories')
         if(!category){return res.sendStatus(404)}
-        const subcategory = await dbCheck({id:subId, shopID:id}, 'subcategories')
+        const subcategory = await getByID(subId, 'subcategories')
         if(!subcategory){return res.sendStatus(404)}
         const slug = slugify(name);
         const abbr = getAbbreviation(name)
@@ -38,8 +39,7 @@ const addProduct = async(req,res)=> {
         }
         const insert = await insertData(params, 'products')
         if(!insert){return res.sendStatus(400)}
-        //const response = {id:insert.id, name:insert.name, slug:insert.slug, category:category.name, subcategory:subcategory.name, picture:insert.picture}
-        res.status(200).json(limit)
+        res.status(200).json({message: 'product uploaded successfully', code:0, response:insert})
     }catch(error){
         return res.status(500).json(error.message)
     }
@@ -51,11 +51,11 @@ const editProduct = async(req,res)=> {
     try{
         const shop = await getByID(id, 'shops',)
         if(!shop){return res.sendStatus(404)}
-        const category = await dbCheck({id:catId,shopID:id}, 'categories')
+        const category = await getByID(catId, 'categories')
         if(!category){return res.status(404).json({error:'category not found'})}
-        const subcategory = await dbCheck({id:subId, shopID:id}, 'subcategories')
+        const subcategory = await getByID(subId, 'subcategories')
         if(!subcategory){return res.status(404).json({error:'subcategory not found'})}
-        const product = await getSingleItem({id:prodId}, 'products')
+        const product = await getByID(prodId, 'products')
         if(!product){return res.status(404).json({error:'product not found'})}
         const imgName = extractFileNameFromUrl(product.picture)
         const editImg = extractFileNameFromUrl(image);
@@ -97,11 +97,9 @@ const removeFeatured = async(req,res)=> {
     try{
         const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const edit = await removeMultipleProductsFromFeatured(ids, id)
+        const edit = await toggleProductFeaturedHome(ids, false, id)
         if(!edit){res.sendStatus(500)}
-        //const item = await getSingleItem({id:catid}, 'products');
-        //const response = {id:item.id, name:item.name, slug:item.slug, picture:item.picture, featured:item.featured}
-        res.status(200).json(edit);
+        res.status(200).json({message: 'success', code:0, items:ids});
     }catch(error){
         return res.status(500).json({error:error.message})
     }
@@ -113,18 +111,16 @@ const addFeatured = async(req,res)=> {
     try{
         const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const edit = await makeMultipleProductsFeatured(idsArr, id)
+        const edit = await toggleProductFeaturedHome(idsArr, true, id)
         if(!edit){res.sendStatus(500)}
-        //const item = await getSingleItem({id:catid}, 'categories');
-        //const response = {id:item.id, name:item.name, slug:item.slug, picture:item.picture, featured:item.featured}*/
-        res.status(200).json(edit);
+        res.status(200).json({message: 'success', code:0, items:ids});
     }catch(error){
         return res.status(500).json(error)
     }
 }
 
 
-
+/*
 const addProductImg = async(req,res)=> {
     const {shopId, picture}=req.body;
     const {id}= req.params;
@@ -198,7 +194,7 @@ const updateProductsOffer = async(req, res)=> {
             const add = await addProductsToOffer(item, id)
             response.push(add);
         }));
-        //if(!add){return res.sendStatus(404)}*/
+        //if(!add){return res.sendStatus(404)}
         res.status(200).json({message: `${total} products added to offer`, code:0})
     }catch(error){
         return res.status(500).json({error:error.message})
@@ -218,17 +214,16 @@ const removeProductsFromOffer = async(req,res)=> {
     }catch(error){
         return res.status(500).json(error.message)
     }
-}
+}*/
 
 const addFeaturedCategoryProducts = async(req,res)=> {
-    const {shopId, productIds}= req.body
+    const {ids}= req.body
+    const {id} = req.params;
     try{
-        const find = await getByID(shopId, 'shops')
+        const find = await getByID(id, 'shops')
         if(!find){return res.sendStatus(404)}
-        const params = {featuredCategory:true}
-        await Promise.all(productIds.map(async (item) => {
-            const add = await updateData(item, params, 'products');
-        }));
+    
+        const add = await toggleProductFeaturedCategory(ids, true, id);
         //const add = await productUpdateMany(productIds, params);
         res.status(200).json({message:'success', code:0})
 
@@ -238,48 +233,14 @@ const addFeaturedCategoryProducts = async(req,res)=> {
 }
 
 const removeFeaturedCategoryProducts = async(req,res)=> {
-    const {shopId, productIds}= req.body
+    const {ids}= req.body
+    const {id} = req.params;
     try{
-        const find = await getByID(shopId, 'shops')
+        const find = await getByID(id, 'shops')
         if(!find){return res.sendStatus(404)}
-        const params = {featuredCategory:false}
-        await Promise.all(productIds.map(async (item) => {
-            const add = await updateData(item, params, 'products');
-        }));
+        const add = await toggleProductFeaturedCategory(ids, false, id);
         //const add = await productUpdateMany(productIds, params);
         res.status(200).json({message:'success', code:0})
-
-    }catch(error){
-        return res.status(500).json(error.message)
-    }
-}
-
-const addFeaturedHomeProducts = async(req,res)=> {
-    const {shopId, productIds}= req.body
-    try{
-        const find = await getByID(shopId, 'shops')
-        if(!find){return res.sendStatus(404)}
-        const params = {featuredHome:true}
-        await Promise.all(productIds.map(async (item) => {
-            const add = await updateData(item, params, 'products');
-        }));
-        res.status(200).json({message: 'success', code:0})
-
-    }catch(error){
-        return res.status(500).json(error.message)
-    }
-}
-
-const removeFeaturedHomeProducts = async(req,res)=> {
-    const {shopId, productIds}= req.body
-    try{
-        const find = await getByID(shopId, 'shops')
-        if(!find){return res.sendStatus(404)}
-        const params = {featuredHome:false}
-        await Promise.all(productIds.map(async (item) => {
-            const add = await updateData(item, params, 'products');
-        }));
-        res.status(200).json({message: 'success', code:0})
 
     }catch(error){
         return res.status(500).json(error.message)
@@ -294,7 +255,7 @@ const deleteProducts = async(req, res)=>{
     try{
         const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
-        const product = await dbCheck({id:prodId, shopID:id}, 'products')
+        const product = await getByID(prodId, 'products')
         if(!product){return res.sendStatus(404)}
         const blobname = extractFileNameFromUrl(product.picture)
         const deleteImg = await deleteBlob(blobname, 'products')
@@ -315,7 +276,6 @@ const getshopProducts = async(req,res)=> {
     const {id,page}=req.query;
     try{
         const pageNumber = parseInt(page )|| 1;
-        const params = {shopID:id}
         const products = await findshopproducts(id, pageNumber);
         return res.status(200).json(products)
 
@@ -365,8 +325,7 @@ const getFeaturedHomeProducts = async(req,res)=> {
     const {id, page}=req.query;
     try{
         const pageNumber = parseInt(page) || 1;
-        const params = {featuredHome:true, shopID:id}
-        const products = await getDataByMultipleParams(params, 'products', pageNumber)
+        const products = await fetchFeaturedHomeProducts(id, true, pageNumber)
         res.status(200).json(products);
 
     }catch(error){
@@ -380,7 +339,7 @@ const getstandardproducts = async(req,res)=> {
     const {id, page}=req.query;
     try{
         const pageNumber = parseInt(page) || 1;
-        const products = await findstandardShopProducts(id, pageNumber)
+        const products = await fetchFeaturedHomeProducts(id, false, pageNumber)
         res.status(200).json(products);
 
     }catch(error){
@@ -392,7 +351,7 @@ const getFeaturedCategoryProducts = async(req,res)=> {
     const {id, page, slug} = req.query;
     try{
         const pageNumber = parseInt(page) || 1;
-        const products = await findFeaturedCategoryProducts(id, slug, pageNumber)
+        const products = await findFeaturedCategoryProducts(id, slug, true, pageNumber)
         res.status(200).json(products)
 
     }catch(error){
@@ -466,44 +425,37 @@ const getCollectionsProducts = async(req,res)=> {
     }
 }
 
-const getProductImages = async(req,res)=> {
-    const {id}=req.params;
+const getProductsNotinCollection = async(req,res)=> {
+    const {id, shopid, page} = req.query;
     try{
-        const images = await getDataByParams('productpictures', {productID:id})
-        res.status(200).json(images)
+        const pageNumber = parseInt(page) || 1;
+        const products = await filterProductsNotInCollection(id, shopid, pageNumber);
+        res.status(200).json(products)
 
     }catch(error){
-        res.status(500).json(error.message)
+        res.status(500).json(error)
     }
 }
 
 
-
 module.exports = {
     addProduct, 
-    addProductImg, 
-    updateProductImg, 
-    deleteProductImage, 
     editProduct, 
-    updateProductsOffer, 
-    removeProductsFromOffer, 
     deleteProducts, 
     getofferProducts,
     addFeaturedCategoryProducts,
     removeFeaturedCategoryProducts,
-    removeFeaturedHomeProducts,
-    addFeaturedHomeProducts,
     getRelatedproducts,
     getFeaturedHomeProducts,
     getFeaturedCategoryProducts,
     getSubcategoryProducts,
     getSingleProduct,
-    getProductImages,
     getshopProducts,
     searchProducts,
     getCollectionsProducts,
     removeFeatured,
     addFeatured,
-    getstandardproducts
+    getstandardproducts,
+    getProductsNotinCollection
     
 }
