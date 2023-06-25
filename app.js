@@ -31,7 +31,7 @@ app.use((req, res, next)=> {
   })
 
 
-app.use('/shops', Auth)
+app.use('/auth', Auth)
 app.use('/categories', PostCategories)
 app.use('/subcategories', postSubcategories)
 app.use('/offers', offers)

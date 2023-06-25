@@ -40,7 +40,6 @@ const Register = async(req,res)=> {
 }
 
 const fetchusers = async(req,res)=> {
-    //const {number, email} = req.body;
     try{
         const user = await getUsers()
         res.status(200).json(user)
@@ -85,7 +84,6 @@ const createShop = async(req,res)=> {
     if(!user){return res.status(404).json({error:'User not found', code:3})}
     const slug = slugify(name)
     const abbr = getAbbreviation(name)
-    //const str = socials.join(',')
     const data = {
         id: abbr + generateID(),
         slug:slug,
@@ -101,7 +99,6 @@ const createShop = async(req,res)=> {
     }
     const insert = await insertData(data, 'shops')
     if(!insert){return res.status(404).json({error:insert, code:0})}
-    //const response = {name:insert.shopName, id:insert.id, slug:insert.slug, type:insert.type, logo:insert.logo}
     res.status(200).json(insert);
 
    }catch(error){
