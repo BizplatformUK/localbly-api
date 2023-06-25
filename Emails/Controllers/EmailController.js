@@ -47,10 +47,7 @@ const sendEmail = async(req,res)=> {
 
 const resetPassword = async(req,res)=> {
   const {email} = req.body;
-  const {id} = req.params;
   try{
-    const user = await getByID(id, 'users');
-    if(!user){return res.status(200).json({message: 'user not found', code:3})}
     const emailUser = await getuserBYEmail(email);
     if(!emailUser){return res.status(200).json({message: 'user not found matching email', code:3})}
     const token = serialKey()
