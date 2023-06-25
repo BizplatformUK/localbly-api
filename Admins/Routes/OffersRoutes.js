@@ -13,13 +13,13 @@ router.patch('/add-to-featured/:id', authenticateJwtToken, authAdmin, post.addTo
 
 router.delete('/remove-from-featured', authenticateJwtToken, authAdmin, post.removeFeatured)
 
-router.post('/add-to-offers/:id', /*authenticateJwtToken, authAdmin,*/ post.addProductstoOffers)
+router.post('/add-to-offers/:id', authenticateJwtToken, authAdmin, post.addProductstoOffers)
+
+router.delete('/remove-products-offers/:id', /*authenticateJwtToken, authAdmin,*/ post.removeProductstoOffers)
 
 router.get('/get-offers',   post.getShopOffers)
 
-
 router.get('/get-past-offers', post.getPastOffers)
-
 
 router.get('/get-featured-offers', post.getfeaturedOffers)
 

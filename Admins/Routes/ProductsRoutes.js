@@ -41,4 +41,6 @@ router.get('/get-collections-products', post.getCollectionsProducts)
 
 router.get('/get-not-collections', post.getProductsNotinCollection)
 
+router.get('/get-not-offers', post.getProductsNotinOffer)
+
 module.exports = router

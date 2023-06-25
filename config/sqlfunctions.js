@@ -363,8 +363,8 @@ const filterShopCollections = async(id, featured, pageNumber) => {
 const filterProductsNotInCollection = async(id, shopid, pageNumber) => {
   try {
     const itemsPerPage = 6;
-    const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ? AND collectionsID != ?`;
-    const sql = `SELECT * FROM products WHERE shopID = ? AND collectionsID != ? LIMIT ? OFFSET ?`; 
+    const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ? AND (collectionsID <> ? OR collectionsID IS NULL)`;
+    const sql = `SELECT * FROM products WHERE shopID = ? AND (collectionsID <> ? OR collectionsID IS NULL) LIMIT ? OFFSET ?`;
 
     const [count] = await db.query(countSql, [shopid, id])
     const totalItems = count[0].total
@@ -380,6 +380,30 @@ const filterProductsNotInCollection = async(id, shopid, pageNumber) => {
     return error.message;
   }
 };
+
+const filterProductsNotInOffer = async (id, shopid, pageNumber) => {
+  try {
+    const itemsPerPage = 6;
+    const offset = (pageNumber - 1) * itemsPerPage;
+    const offid = null;
+
+    const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ? AND (offerID <> ? OR offerID IS NULL)`;
+    const sql = `SELECT * FROM products WHERE shopID = ? AND (offerID <> ? OR offerID IS NULL) LIMIT ? OFFSET ?`;
+
+    const [count] = await db.query(countSql, [shopid, id]);
+    const totalItems = count[0].total;
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    const [rows] = await db.query(sql, [shopid, id, itemsPerPage, offset]);
+    const results = { totalPages, items: rows };
+    return results;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
 
 const findCurrentOffers = async(id, pageNumber) => {
   try{
@@ -478,6 +502,18 @@ const filterOfferFeatured = async(id, featured, pageNumber) => {
   };
 
   const addMultipleProductsToOffers = async(ids, shopid, offid) => {
+    try{
+      let update = `UPDATE products SET offerID = ? WHERE shopID = ? AND id IN (?)`;
+      const [results] = await db.query(update, [offid, shopid, ids])
+      return results;
+    }catch(error){
+      return error;
+    }
+    
+  };
+
+  const removeMultipleProductsFromOffers = async(ids, shopid) => {
+    const offid = null;
     try{
       let update = `UPDATE products SET offerID = ? WHERE shopID = ? AND id IN (?)`;
       const [results] = await db.query(update, [offid, shopid, ids])
@@ -855,6 +891,8 @@ module.exports={
     fetchFeaturedHomeProducts,
     findSingleUser,
     fetchShopSubcategories,
-    filterProductsNotInCollection
+    filterProductsNotInCollection,
+    filterProductsNotInOffer,
+    removeMultipleProductsFromOffers
     
 }

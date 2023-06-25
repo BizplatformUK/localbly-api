@@ -1,4 +1,8 @@
 const { EmailClient } = require("@azure/communication-email");
+const {serialKey} = require('../../Utils/Auth')
+const {getByID, getuserBYEmail, updateData} = require('../../config/sqlfunctions');
+const {passwordresetTemplate} = require('../emailTemplates')
+
 require('dotenv').config()
 
 const connectionString = process.env.COMMUNICATION_SERVICES_CONNECTION_STRING;
@@ -13,7 +17,7 @@ async function pollEmailService(receiverEmailAddress, emailSubject,emailMessage)
       content: {
         subject: emailSubject,
         plainText:"Return this value",
-        plainText:emailMessage,
+        html:emailMessage,
        // html: emailMessage,
       }, 
   
@@ -41,8 +45,28 @@ const sendEmail = async(req,res)=> {
   }
 }
 
+const resetPassword = async(req,res)=> {
+  const {email} = req.body;
+  const {id} = req.params;
+  try{
+    const user = await getByID(id, 'users');
+    if(!user){return res.status(200).json({message: 'user not found', code:3})}
+    const emailUser = await getuserBYEmail(email);
+    if(!emailUser){return res.status(200).json({message: 'user not found matching email', code:3})}
+    const token = serialKey()
+    const params = {resetToken:token}
+    const update = await updateData(id, params, 'users')
+    const subject = 'Reset password';
+    const message = passwordresetTemplate(process.env.RESET_PASSWORD_LINK + token)
+    const sent = pollEmailService(email, subject, message)
+    res.status(200).json(sent)
+  }catch(error){
+    return error
+  }
+}
+
 
   
  
 
-module.exports={sendEmail}
+module.exports={sendEmail, resetPassword}

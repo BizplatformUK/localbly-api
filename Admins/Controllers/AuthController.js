@@ -64,7 +64,7 @@ const Login = async(req,res)=> {
     const {email, password}=req.body
     try{
     const user = await getuserBYEmail(email);
-    if(!user){return res.status(404).json({error:'user not found', code:3})}
+    if(!user){return res.status(404).json({error:'Sorry, but the email address you entered is not registered, please check and try again', code:3})}
     const validPassword = await bcrypt.compare(password, user.password)
     if(!validPassword){return res.status(401).json({error:'You entered an incorrect password, please check and try again', code:3})}
     const data = {name:user.name, email:user.email, id:user.id, role:user.role}

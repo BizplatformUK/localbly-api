@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, getDiscountPrice, extractFileNameFromUrl,  compareStrings} = require('../../Utils/Utils');
 const {deleteBlob, deleteImages} = require('../Images/ImageController')
-const {insertData, updateData, filterProductsNotInCollection, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
+const {insertData, updateData, filterProductsNotInCollection, filterProductsNotInOffer, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
 
 
 const addProduct = async(req,res)=> {
@@ -239,7 +239,6 @@ const removeFeaturedCategoryProducts = async(req,res)=> {
         const find = await getByID(id, 'shops')
         if(!find){return res.sendStatus(404)}
         const add = await toggleProductFeaturedCategory(ids, false, id);
-        //const add = await productUpdateMany(productIds, params);
         res.status(200).json({message:'success', code:0})
 
     }catch(error){
@@ -437,6 +436,20 @@ const getProductsNotinCollection = async(req,res)=> {
     }
 }
 
+const getProductsNotinOffer = async(req,res)=> {
+    const {id, shopid, page} = req.query;
+    try{
+        const pageNumber = parseInt(page) || 1;
+        const products = await filterProductsNotInOffer(id, shopid, pageNumber);
+        res.status(200).json(products)
+
+    }catch(error){
+        res.status(500).json(error)
+    }
+}
+
+
+
 
 module.exports = {
     addProduct, 
@@ -456,6 +469,7 @@ module.exports = {
     removeFeatured,
     addFeatured,
     getstandardproducts,
-    getProductsNotinCollection
+    getProductsNotinCollection,
+    getProductsNotinOffer
     
 }

@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, generateCouponCodes, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {deleteBlob} = require('../Images/ImageController')
-const {insertData, updateData, addMultipleProductsToOffers, deleteData, filterOfferTypes, filterOfferFeatured, findPastOffers, dbCheck, isPresentInBanner, findFeaturedOffers, findCurrentOffers, getDataByDate, getByID, getDataByMultipleParams, searchData, getSingleItem} = require('../../config/sqlfunctions')
+const {insertData, updateData, addMultipleProductsToOffers, removeMultipleProductsFromOffers, deleteData, filterOfferTypes, filterOfferFeatured, findPastOffers, dbCheck, isPresentInBanner, findFeaturedOffers, findCurrentOffers, getDataByDate, getByID, getDataByMultipleParams, searchData, getSingleItem} = require('../../config/sqlfunctions')
 
 const addOffer = async(req,res)=> {
     const {name, img, type, discount, qty, from, to, featured} = req.body
@@ -100,7 +100,23 @@ const addProductstoOffers = async(req,res)=> {
        
         const data = await addMultipleProductsToOffers(ids, id, offid);
         if(!data){return res.sendStatus(500)}
-        //const response =  {id:data.id, name:data.name, picture:data.picture, featured:data.featured, date:data.createdAt}
+        res.status(200).json({message: 'success', code:0, items:ids})
+
+    }catch(error){
+        return res.status(500).json({error:error.message})
+    }
+}
+
+
+const removeProductstoOffers = async(req,res)=> {
+    const {ids} = req.body;
+    const {id}=req.params;
+    try{
+        const shop = await getByID(id, 'shops')
+        if(!shop){return res.status(404).json({error: 'shop not found', code:3})}
+       
+        const data = await removeMultipleProductsFromOffers(ids, id);
+        if(!data){return res.sendStatus(500)}
         res.status(200).json({message: 'success', code:0, items:ids})
 
     }catch(error){
@@ -120,7 +136,6 @@ const addToFeatured = async(req,res)=> {
         const data = {featured:true}
         const edit = await updateData(offid, data, 'offers')
         if(!edit){res.sendStatus(500)}
-        //const response = {id:item.id, name:item.name, slug:item.slug, picture:item.picture, featured:item.featured}
         res.status(200).json({message: 'success', code:0, item:edit});
     }catch(error){
         return res.status(500).json({error:error.message})
@@ -312,4 +327,4 @@ const searchOffers = async(req,res)=> {
 }
 
 
-module.exports = {addOffer, addProductstoOffers, addToFeatured, removeFeatured, editOffers, deleteOffer, getShopOffers, getPastOffers, getfeaturedOffers, filterOffers, searchOffers}
+module.exports = {addOffer, removeProductstoOffers, addProductstoOffers, addToFeatured, removeFeatured, editOffers, deleteOffer, getShopOffers, getPastOffers, getfeaturedOffers, filterOffers, searchOffers}
