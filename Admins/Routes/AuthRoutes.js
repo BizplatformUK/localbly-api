@@ -10,6 +10,8 @@ router.post('/register', userExists, post.Register)
 
 router.post('/login', post.Login)
 
+router.patch('/password-reset', post.resetPassword)
+
 router.get('/fetch', post.fetchusers)
 
 router.get('/fetch-user/:id', post.getSingleUser)

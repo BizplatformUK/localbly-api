@@ -48,15 +48,15 @@ const sendEmail = async(req,res)=> {
 const resetPassword = async(req,res)=> {
   const {email} = req.body;
   try{
-    const emailUser = await getuserBYEmail(email);
-    if(!emailUser){return res.status(200).json({message: 'user not found matching email', code:3})}
+    const user = await getuserBYEmail(email);
+    if(!user){return res.status(200).json({message: 'user not found matching email', code:3})}
     const token = serialKey()
     const params = {resetToken:token}
-    const update = await updateData(id, params, 'users')
+    const update = await updateData(user.id, params, 'users')
     const subject = 'Reset password';
     const message = passwordresetTemplate(process.env.RESET_PASSWORD_LINK + token)
     const sent = pollEmailService(email, subject, message)
-    res.status(200).json(sent)
+    res.status(200).json(update)
   }catch(error){
     return error
   }

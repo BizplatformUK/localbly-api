@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, getDiscountPrice, extractFileNameFromUrl,  compareStrings} = require('../../Utils/Utils');
 const {deleteBlob, deleteImages} = require('../Images/ImageController')
-const {insertData, updateData, filterProductsNotInCollection, filterProductsNotInOffer, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
+const {insertData, updateData, filterProductsNotInCollection, searchShopProducts, filterProductsNotInOffer, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
 
 
 const addProduct = async(req,res)=> {
@@ -274,7 +274,7 @@ const deleteProducts = async(req, res)=>{
 const getshopProducts = async(req,res)=> {
     const {id,page}=req.query;
     try{
-        const pageNumber = parseInt(page )|| 1;
+        const pageNumber = parseInt(page)|| 1;
         const products = await findshopproducts(id, pageNumber);
         return res.status(200).json(products)
 
@@ -287,7 +287,7 @@ const searchProducts = async(req,res)=> {
     const {id,term, page} = req.query;
     try{
         const pageNumber = parseInt(page )|| 1;
-        const products = await searchData(term, 'products', pageNumber, id);
+        const products = await searchShopProducts(term,  pageNumber, id);
         return res.status(200).json(products)
 
     }catch(error){

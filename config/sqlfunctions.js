@@ -65,6 +65,32 @@ const getuserBYEmail = async(email)=> {
   }
 }
 
+const getuserBYResetToken = async(token)=> {
+  try{
+    const sql = `SELECT * FROM users WHERE resetToken = ? LIMIT 1`
+    const [rows] = await db.query(sql, [token]);
+    if(rows.length < 1){
+      return false
+    }
+    return rows[0];
+
+  }catch(error){
+      return error.message
+  }
+}
+
+const changePassword = async(data, token) => {
+  try{
+    let update = `UPDATE users SET ? WHERE resetToken = ?`
+    const [results] = await db.query(update, [data, token])
+    const response = await getByID(id, table)
+    return response;
+  }catch(error){
+    return error;
+  }
+
+};
+
 const findSingleUser = async(email, number)=> {
   try{
     const sql = `SELECT * FROM users WHERE email = ? AND number = ?  LIMIT 1`
@@ -572,28 +598,72 @@ const filterOfferFeatured = async(id, featured, pageNumber) => {
     try {
       const itemsPerPage = 6;
       const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ?`;
-      const sql = `SELECT p.*, sc.name AS subcategory, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS category, pc.name AS collection
-                           FROM products p
-                           JOIN categories c ON p.categoryID = c.id
-                           JOIN subcategories sc on p.subcategoryID = sc.id
-                           JOIN collections pc on p.collectionsID = pc.id
-                           WHERE p.shopID = ?
-                           ORDER BY p.createdAt DESC
-                           LIMIT ? OFFSET ?`;
-
-    const [count] = await db.query(countSql, [id])
-    const totalItems = count[0].total
-                       
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const offset = (pageNumber - 1) * itemsPerPage;
-                       
-    const [rows] = await db.query(sql, [id, itemsPerPage, offset])
-    const results = {totalPages, items:rows}
-    return results;
+      const sql = `SELECT 
+      products.*, 
+      categories.name AS category, 
+      subcategories.name AS subcategory, 
+      COALESCE(collections.name, null) AS collection,
+      COALESCE(collections.slug, null) AS collection_slug
+      FROM products
+      JOIN categories ON categoryID = categories.id
+      JOIN subcategories ON subcategoryID = subcategories.id
+      LEFT JOIN collections ON collectionsID = collections.id
+      WHERE products.shopID = ?
+      ORDER BY products.createdAt DESC
+      LIMIT ? OFFSET ?
+    `;
+    
+      const [count] = await db.query(countSql, [id])
+      const totalItems = count[0].total
+                                                                                                                                                          
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const offset = (pageNumber - 1) * itemsPerPage;
+                                                                                                                                                          
+      const [rows] = await db.query(sql, [id, itemsPerPage, offset])
+      const results = {totalPages:totalPages, items:rows}
+      return results; 
     } catch (error) {
       return error.message;
     }
-  };
+};
+
+const searchShopProducts = async(term, pageNumber, id) => {
+  try {
+    const itemsPerPage = 6;
+    const searchTerm = `%${term}%`;
+
+    const countSql = `SELECT COUNT(*) AS total FROM products WHERE name LIKE ? AND shopID = ?`;
+    const sql = `SELECT 
+    products.*, 
+    categories.name AS category, 
+    subcategories.name AS subcategory, 
+    COALESCE(collections.name, null) AS collection,
+    COALESCE(collections.slug, null) AS collection_slug
+    FROM products
+    JOIN categories ON categoryID = categories.id
+    JOIN subcategories ON subcategoryID = subcategories.id
+    LEFT JOIN collections ON collectionsID = collections.id
+    WHERE products.name LIKE ? AND products.shopID = ?
+    ORDER BY products.createdAt DESC
+    LIMIT ? OFFSET ?
+  `;
+  
+    const [count] = await db.query(countSql, [searchTerm, id])
+    const totalItems = count[0].total
+
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const offset = (pageNumber - 1) * itemsPerPage;
+
+    const [rows] = await db.query(sql, [searchTerm, id, itemsPerPage, offset])
+    const results = {totalPages, items:rows}
+    return results;
+
+  } catch (error) {
+    return error.message;
+  }
+};
+
+  
 
 const getOfferProducts = async(id, slug, pageNumber) => {
     try {
@@ -625,7 +695,20 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
     try {
       const itemsPerPage = 6;
       const countSql = `SELECT COUNT(*) AS total FROM products WHERE featuredHome = ? AND shopID = ?`;
-      const sql = `SELECT * FROM products WHERE featuredHome = ? AND shopID = ? ORDER BY products.createdAt DESC LIMIT ? OFFSET ?`;
+
+      const sql = `SELECT 
+      products.*, 
+      categories.name AS category, 
+      subcategories.name AS subcategory, 
+      COALESCE(collections.name, null) AS collection,
+      COALESCE(collections.slug, null) AS collection_slug
+      FROM products
+      JOIN categories ON categoryID = categories.id
+      JOIN subcategories ON subcategoryID = subcategories.id
+      LEFT JOIN collections ON collectionsID = collections.id
+      WHERE products.featuredHome = ? AND products.shopID = ?
+      ORDER BY products.createdAt DESC
+      LIMIT ? OFFSET ?`;
 
       const [count] = await db.query(countSql, [featured, id])
       const totalItems = count[0].total
@@ -648,12 +731,21 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
       const countSql = `SELECT COUNT(*) AS total FROM products
                           JOIN categories ON categories.id = products.categoryID
                           WHERE categories.slug = ? AND products.shopID = ? AND products.featuredCategory = ?`;
-      const sql = `SELECT products.*, categories.slug AS categorySlug, categories.name AS categoryName
-                           FROM products
-                           JOIN categories ON categories.id = products.categoryID
-                           WHERE categories.slug = ? AND products.shopID = ? AND products.featuredCategory = ? 
-                           ORDER BY products.createdAt DESC
-                           LIMIT ? OFFSET ?`;
+
+        const sql =         `SELECT 
+                          products.*, 
+                          categories.name AS category, 
+                          subcategories.name AS subcategory, 
+                          COALESCE(collections.name, null) AS collection,
+                          COALESCE(collections.slug, null) AS collection_slug
+                          FROM products
+                          JOIN categories ON categoryID = categories.id
+                          JOIN subcategories ON subcategoryID = subcategories.id
+                          LEFT JOIN collections ON collectionsID = collections.id
+                          WHERE categories.slug = ? AND products.shopID = ? AND products.featuredCategory = ?
+                          ORDER BY products.createdAt DESC
+                          LIMIT ? OFFSET ?`
+  
             
     const [count] = await db.query(countSql, [slug, id, featured])
     const totalItems = count[0].total
@@ -893,6 +985,9 @@ module.exports={
     fetchShopSubcategories,
     filterProductsNotInCollection,
     filterProductsNotInOffer,
-    removeMultipleProductsFromOffers
+    removeMultipleProductsFromOffers,
+    changePassword,
+    getuserBYResetToken,
+    searchShopProducts
     
 }

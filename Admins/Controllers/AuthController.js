@@ -1,8 +1,9 @@
 const {generateID, isValidPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
-const {ifExist, insertData,deleteMultipleItems, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {ifExist, insertData,deleteMultipleItems, changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
+
 
 const findshop = async(req,res)=> {
     try{
@@ -178,6 +179,22 @@ const fetchbanner = async(req,res)=> {
         if(!result){return res.status(404).json({error:result, code:3})}
         //const response = {name:result.name, id:result.id, email:result.email, number:result.number}
         res.status(200).json({message: 'Profile updated successfully', code:0, result})
+
+    }catch(error){
+        return res.status(500).json(error.message)
+    }
+}
+
+const resetPassword = async(req,res)=> {
+    const {token, newPassword} = req.body
+    const user = await getuserBYResetToken(token)
+    if(!user){return res.status(404).json({error:user, code:3})}
+    try{
+        const hashedPassword = await hashPassword(newPassword);
+        const params = {resetToken:'na', password:hashedPassword}
+        const result = await changePassword(params, token);
+        if(!result){return res.status(404).json({error:result, code:3})}
+        res.status(200).json({message: 'password changed successfully', code:0, result})
 
     }catch(error){
         return res.status(500).json(error.message)
@@ -380,5 +397,6 @@ module.exports={
     fetchShops,
     findshop,
     removeMultiplefromBanner,
-    getShopSingleShopByID
+    getShopSingleShopByID,
+    resetPassword
 }
