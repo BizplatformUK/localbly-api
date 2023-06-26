@@ -39,6 +39,8 @@ router.get('/get-single-product', post.getSingleProduct)
 
 router.get('/get-collections-products', post.getCollectionsProducts)
 
+router.get('/get-all-collections-products', post.getAllCollectionsProducts)
+
 router.get('/get-not-collections', post.getProductsNotinCollection)
 
 router.get('/get-not-offers', post.getProductsNotinOffer)

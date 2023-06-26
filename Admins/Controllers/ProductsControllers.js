@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, getDiscountPrice, extractFileNameFromUrl,  compareStrings} = require('../../Utils/Utils');
 const {deleteBlob, deleteImages} = require('../Images/ImageController')
-const {insertData, updateData, filterProductsNotInCollection, searchShopProducts, filterProductsNotInOffer, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
+const {insertData, updateData, filterProductsNotInCollection, searchShopProducts, findAllCollectionsProducts, filterProductsNotInOffer, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
 
 
 const addProduct = async(req,res)=> {
@@ -424,6 +424,21 @@ const getCollectionsProducts = async(req,res)=> {
     }
 }
 
+
+const getAllCollectionsProducts = async(req,res)=> {
+    const {id, slug, page} = req.query;
+    try{
+        const pageNumber = parseInt(page) || 1;
+        const products = await findAllCollectionsProducts(id, slug, pageNumber);
+        res.status(200).json(products)
+
+    }catch(error){
+        res.status(500).json(error)
+    }
+}
+
+
+
 const getProductsNotinCollection = async(req,res)=> {
     const {id, shopid, page} = req.query;
     try{
@@ -470,6 +485,7 @@ module.exports = {
     addFeatured,
     getstandardproducts,
     getProductsNotinCollection,
-    getProductsNotinOffer
+    getProductsNotinOffer,
+    getAllCollectionsProducts
     
 }
