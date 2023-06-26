@@ -830,7 +830,6 @@ const findCollectionsProducts = async(id, slug, pageNumber) => {
     sc.name AS subcategoryName,
     sc.slug AS subcategorySlug
     FROM products p
-    FROM products p
     JOIN collections c ON p.collectionsID = c.id
     JOIN categories pc ON p.categoryID = pc.id
     JOIN subcategories sc ON p.subcategoryID = sc.id
