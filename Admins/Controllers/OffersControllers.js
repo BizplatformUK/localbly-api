@@ -3,7 +3,7 @@ const {deleteBlob} = require('../Images/ImageController')
 const {insertData, updateData, addMultipleProductsToOffers, removeMultipleProductsFromOffers, deleteData, filterOfferTypes, filterOfferFeatured, findPastOffers, dbCheck, isPresentInBanner, findFeaturedOffers, findCurrentOffers, getDataByDate, getByID, getDataByMultipleParams, searchData, getSingleItem} = require('../../config/sqlfunctions')
 
 const addOffer = async(req,res)=> {
-    const {name, img, type, discount, qty, from, to, featured} = req.body
+    const {name, img, type, discount, quantity, from, to, featured} = req.body
     const {id}=req.params
     try{
         const shop = await getByID(id, 'shops')
@@ -20,7 +20,7 @@ const addOffer = async(req,res)=> {
             type,
             discount,
             couponCode:type == 'OFFER' ? "na" : generateCouponCodes(name),
-            quantity: qty,
+            quantity,
             picture:img,
             validFrom:new Date(from),
             validTo: new Date(to),
