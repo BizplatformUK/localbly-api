@@ -54,9 +54,10 @@ const resetPassword = async(req,res)=> {
     const params = {resetToken:token}
     const update = await updateData(user.id, params, 'users')
     const subject = 'Reset password';
-    const message = passwordresetTemplate(process.env.RESET_PASSWORD_LINK + token)
+    const url = process.env.RESET_PASSWORD_LINK + token
+    const message = passwordresetTemplate(url)
     const sent = pollEmailService(email, subject, message)
-    res.status(200).json(update)
+    res.status(200).json(sent)
   }catch(error){
     return error
   }
