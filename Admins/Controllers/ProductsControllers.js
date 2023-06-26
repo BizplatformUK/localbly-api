@@ -259,9 +259,6 @@ const deleteProducts = async(req, res)=>{
         const blobname = extractFileNameFromUrl(product.picture)
         const deleteImg = await deleteBlob(blobname, 'products')
         if(deleteImg.code == 3){return res.status(500).json(deleted.error)}
-        const images = await fetch('productpictures', {productID:id})
-        const deleted = await deleteImages('products', images)
-        if(deleted.code == 3){ return res.status(500).json(deleted.error)}
         const deletion= await deleteData(prodId, 'products');
         if(!deletion){return res.sendStatus(400)}
         res.status(200).json({message:'Product deleted successfully', code:0 , id:prodId})
