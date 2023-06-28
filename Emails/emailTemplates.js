@@ -66,7 +66,7 @@ function passwordresetTemplate(resetLink) {
         <body>
         <table align="center" role="presentation" cellSpacing="0" cellPadding="0" border="0" width="100%" style="max-width:600px;margin:0 auto">
             <img alt="Localbly" src="https://localblyimages.blob.core.windows.net/logos/logo.png" width="120" height="36" style="display:block;outline:none;border:none;text-decoration:none" />
-            <h1 style="color:#1d1c1d;font-size:36px;font-weight:700;margin:30px 0;padding:0;line-height:42px">Resent Password</h1>
+            <h1 style="color:#1d1c1d;font-size:36px;font-weight:700;margin:30px 0;padding:0;line-height:42px">Reset Password</h1>
             <p style="font-size:20px;line-height:28px;margin:16px 0;margin-bottom:30px">Click on the button below to reset your password</p>
             <a href="${resetLink}" target="_blank" style="font-size:14px;background-color:#109cf1;color:#fff;line-height:100%;border-radius:0.5em;padding:0px 0px;text-decoration:none;display:inline-block;max-width:100%">
                 <span style="font-size:14px;background-color:#109cf1;color:#fff;line-height:120%;border-radius:0.5em;padding:0.85em 1.5em;max-width:100%;display:inline-block;text-decoration:none;text-transform:none;mso-padding-alt:0px;mso-text-raise:0">

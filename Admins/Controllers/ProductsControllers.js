@@ -112,8 +112,8 @@ const addFeatured = async(req,res)=> {
         const shop = await getByID(id, 'shops')
         if(!shop){return res.sendStatus(404)}
         const edit = await toggleProductFeaturedHome(idsArr, true, id)
-        if(!edit){res.sendStatus(500)}
-        res.status(200).json({message: 'success', code:0, items:ids});
+        if(!edit){return res.sendStatus(500)}
+        return res.status(200).json({message: 'success', code:0, idsArr});
     }catch(error){
         return res.status(500).json(error)
     }
