@@ -926,16 +926,13 @@ const getSubcategoriesByCategorySlug = async(slug, id, pageNumber) => {
                          FROM subcategories
                          JOIN categories ON categories.id = subcategories.categoryID
                          WHERE categories.slug = ? AND subcategories.shopID = ?
-                         ORDER BY subcategories.createdAt DESC
-                         LIMIT ? OFFSET ?`;
+                         ORDER BY subcategories.createdAt DESC`;
     const [count] = await db.query(countSql, [slug, id])
     const totalItems = count[0].total
                                                                                                                                     
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const offset = (pageNumber - 1) * itemsPerPage;
-                                                                                                                                    
-    const [rows] = await db.query(sql, [slug, id, itemsPerPage, offset])
-    const results = {totalPages, items:rows}
+                                                                                                                             
+    const [rows] = await db.query(sql, [slug, id])
+    const results = rows
     return results;               
   } catch (error) {
     return error.message;
