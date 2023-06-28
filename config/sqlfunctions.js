@@ -142,10 +142,6 @@ const deleteData = async(id, shopid, table) => {
  
 };
 
-
-
-
-
 const deleteFromBanner = async(id, shopid) => {
   try{
     let sql = `DELETE FROM banner WHERE itemID = ? AND shopID = ?`;

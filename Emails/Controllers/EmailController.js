@@ -52,7 +52,19 @@ const resetPassword = async(req,res)=> {
     if(!user){return res.status(200).json({message: 'user not found matching email', code:3})}
     const token = serialKey()
     const params = {resetToken:token}
-    const update = await updateData(user.id, params, 'users')
+    const update = await updateData(user.id, params, 'users'); 
+    //delete the token after 5 minutes 
+    update.then(()=>{
+      let timeout = 1000 * 60 * 5; 
+      setTimeout(() => {
+        let params = {resetToken: null};
+        updateData(user.id, params, 'users');
+      }, timeout);
+    })
+      
+    
+  
+
     const subject = 'Reset password';
     const url = process.env.RESET_PASSWORD_LINK + token
     const message = passwordresetTemplate(url)
