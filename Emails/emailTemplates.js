@@ -79,6 +79,6 @@ function passwordresetTemplate(resetLink) {
         </body>
       </html>
     `;
-  }
+}
 
 module.exports={passwordResetTemplate, passwordresetTemplate}
