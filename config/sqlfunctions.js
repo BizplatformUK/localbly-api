@@ -783,7 +783,7 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
       const offset = (pageNumber - 1) * itemsPerPage;
                                                                                           
       const [rows] = await db.query(sql, [slug, id, itemsPerPage, offset])
-      const results = {totalPages, items:rows}
+      const results = {totalPages, total:totalItems, items:rows}
       return results;                
      
     } catch (error) {
