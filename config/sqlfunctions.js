@@ -142,6 +142,18 @@ const deleteData = async(id, shopid, table) => {
  
 };
 
+// const deleteResetToken = async (id, data)=>{
+//   try {
+    
+//     let timeout =  1000* 60 * 5; // time after which the function will run 
+//     setTimeout(() => {
+//       updateData(id, data, "users");
+//     }, timeout);
+//   } catch (error) {
+//     console.log(error);
+//   }
+// }
+
 const deleteFromBanner = async(id, shopid) => {
   try{
     let sql = `DELETE FROM banner WHERE itemID = ? AND shopID = ?`;
