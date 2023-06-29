@@ -375,10 +375,10 @@ const getFeaturedCategoryProducts = async(req,res)=> {
                 slug:product.slug,
                 price:product.price,
                 picture:product.picture, 
-                category:product.categoryName,
+                category:product.category,
                 categorySlug:product.categorySlug,
                 subcategorySlug:product.subcategorySlug,
-                subcategory:product.subcategoryName,
+                subcategory:product.subcategory,
                 onsale:product.onSale,
                 saleprice:product.salePrice,
                 discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
