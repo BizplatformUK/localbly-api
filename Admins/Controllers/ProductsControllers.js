@@ -321,6 +321,26 @@ const getFeaturedHomeProducts = async(req,res)=> {
     try{
         const pageNumber = parseInt(page) || 1;
         const products = await fetchFeaturedHomeProducts(id, true, pageNumber)
+        let response = []
+        products.items.forEach(product=> {
+            const item = {
+                id:product.id, 
+                name:product.name, 
+                slug:product.slug,
+                price:product.price,
+                picture:product.picture, 
+                category:product.categoryName,
+                categorySlug:product.categorySlug,
+                subcategorySlug:product.subcategorySlug,
+                subcategory:product.subcategoryName,
+                categoryID:product.categoryID,
+                subcategoryID:product.subcategoryID,
+                onsale:product.onSale,
+                saleprice:product.salePrice,
+                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
+            }
+            response.push(item)
+        })
         res.status(200).json(products);
 
     }catch(error){
@@ -347,7 +367,25 @@ const getFeaturedCategoryProducts = async(req,res)=> {
     try{
         const pageNumber = parseInt(page) || 1;
         const products = await findFeaturedCategoryProducts(id, slug, true, pageNumber)
-        res.status(200).json(products)
+        let response = []
+        products.items.forEach(product=> {
+            const item = {
+                id:product.id, 
+                name:product.name, 
+                slug:product.slug,
+                price:product.price,
+                picture:product.picture, 
+                category:product.categoryName,
+                categorySlug:product.categorySlug,
+                subcategorySlug:product.subcategorySlug,
+                subcategory:product.subcategoryName,
+                onsale:product.onSale,
+                saleprice:product.salePrice,
+                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
+            }
+            response.push(item)
+        })
+        res.status(200).json({totalPages:products.totalPages, items:response})
 
     }catch(error){
         res.status(500).json(error.message)
@@ -368,7 +406,9 @@ const getSubcategoryProducts = async(req,res)=> {
                 slug:product.slug,
                 price:product.price,
                 picture:product.picture, 
-                category:product.categoryName, 
+                category:product.categoryName,
+                categorySlug:product.categorySlug,
+                subcategorySlug:product.subcategorySlug,
                 subcategory:product.subcategoryName,
                 onsale:product.onSale,
                 saleprice:product.salePrice,

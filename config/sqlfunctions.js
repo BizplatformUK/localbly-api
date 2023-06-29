@@ -699,13 +699,17 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
       const sql = `SELECT 
       products.*, 
       categories.name AS category, 
+      categories.slug AS categorySlug,
+      subcategories.slug AS subcategorySlug,
       subcategories.name AS subcategory, 
       COALESCE(collections.name, null) AS collection,
-      COALESCE(collections.slug, null) AS collection_slug
+      COALESCE(collections.slug, null) AS collection_slug,
+      COALESCE(offers.discount, null) AS discount
       FROM products
       JOIN categories ON categoryID = categories.id
       JOIN subcategories ON subcategoryID = subcategories.id
       LEFT JOIN collections ON collectionsID = collections.id
+      LEFT JOIN offers ON offerID = offers.id
       WHERE products.featuredHome = ? AND products.shopID = ?
       ORDER BY products.createdAt DESC
       LIMIT ? OFFSET ?`;
@@ -735,13 +739,17 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
         const sql =         `SELECT 
                           products.*, 
                           categories.name AS category, 
+                          categories.slug AS categorySlug,
+                          subcategories.slug AS subcategorySlug,
                           subcategories.name AS subcategory, 
                           COALESCE(collections.name, null) AS collection,
-                          COALESCE(collections.slug, null) AS collection_slug
+                          COALESCE(collections.slug, null) AS collection_slug,
+                          COALESCE(offers.discount, null) AS discount
                           FROM products
                           JOIN categories ON categoryID = categories.id
                           JOIN subcategories ON subcategoryID = subcategories.id
                           LEFT JOIN collections ON collectionsID = collections.id
+                          LEFT JOIN offers ON offerID = offers.id
                           WHERE categories.slug = ? AND products.shopID = ? AND products.featuredCategory = ?
                           ORDER BY products.createdAt DESC
                           LIMIT ? OFFSET ?`
@@ -768,13 +776,21 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
                           JOIN categories c ON p.categoryID = c.id
                           JOIN subcategories sc on p.subcategoryID = sc.id
                           WHERE sc.slug = ? AND p.shopID = ?`;
-        const sql = `SELECT p.*, sc.name AS subcategoryName, sc.slug AS subcategorySlug, c.slug AS categorySlug, c.name AS categoryName
-                           FROM products p
-                           JOIN categories c ON p.categoryID = c.id
-                           JOIN subcategories sc on p.subcategoryID = sc.id
-                           WHERE sc.slug = ? AND p.shopID = ?
-                           ORDER BY p.createdAt DESC
-                           LIMIT ? OFFSET ?`;
+        const sql = `SELECT p.*, 
+        sc.name AS subcategoryName, 
+        sc.slug AS subcategorySlug, 
+        c.slug AS categorySlug, 
+        c.name AS categoryName,
+        COALESCE(o.discount, null) AS discount
+        FROM products p
+                           
+        JOIN categories c ON p.categoryID = c.id
+        JOIN subcategories sc on p.subcategoryID = sc.id
+        LEFT JOIN offers o ON p.offerID = o.id
+                           
+        WHERE sc.slug = ? AND p.shopID = ?
+        ORDER BY p.createdAt DESC
+        LIMIT ? OFFSET ?`;
 
       const [count] = await db.query(countSql, [slug, id])
       const totalItems = count[0].total
