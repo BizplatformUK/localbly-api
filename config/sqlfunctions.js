@@ -636,7 +636,9 @@ const searchShopProducts = async(term, pageNumber, id) => {
     const sql = `SELECT 
     products.*, 
     categories.name AS category, 
-    subcategories.name AS subcategory, 
+    subcategories.name AS subcategory,
+    categories.slug AS categorySlug,
+    subcategories.slug AS subcategorySlug, 
     COALESCE(collections.name, null) AS collection,
     COALESCE(collections.slug, null) AS collection_slug
     FROM products
@@ -911,7 +913,11 @@ const findAllCollectionsProducts = async(id, slug, pageNumber) => {
 
 const findRelatedProducts = async(id, slug) => {
   try{
-    const sql = `SELECT p.* FROM products p JOIN categories c on p.categoryID = c.id WHERE c.id =(SELECT categoryID from products WHERE slug = '${slug}')
+    const sql = `SELECT p.*, c.slug AS categorySlug, sc.slug AS subcategorySlug 
+     FROM products p 
+     JOIN categories c ON p.categoryID = c.id 
+     JOIN subcategories sc ON p.subcategoryID = sc.id
+     WHERE c.id =(SELECT categoryID from products WHERE slug = '${slug}')
     AND p.slug != ? AND p.shopID = ? ORDER BY p.createdAT DESC LIMIT 4`;
     const [results] = await db.query(sql, [slug, id])
     return results;
