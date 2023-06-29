@@ -2,7 +2,7 @@ const {generateID, isValidPhoneNumber, isValidEmail, getAbbreviation, slugify, g
 const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
 const {sendEmail} = require('../../Emails/Controllers/EmailController')
-const {ifExist, insertData,deleteMultipleItems, findSingleUser,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {ifExist, insertData,deleteMultipleItems, searchTypes,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
 
 
@@ -19,9 +19,7 @@ const Register = async(req,res)=> {
     const {name, email, number, password, role}= req.body
     try{
         
-        const isValid = isValidPhoneNumber(number)
         const isEmailValid = isValidEmail(email);
-        if(!isValid){return res.status(404).json({error:'Please provide a valid phone number', code:3})}
         if(!isEmailValid){return res.status(404).json({error:'Please provide a valid email address', code:3})}
         const hashedPassword = await hashPassword(password);
         const user = {
@@ -33,7 +31,7 @@ const Register = async(req,res)=> {
             id: generateID(),
         }
         const data = await insertData(user, 'users')
-        if(data.code === 3){return res.status(500).json(data)}
+        if(!data){return res.status(500).json(data)}
         const details = {id:data.id, name:data.name}
         res.status(200).json({message: 'Registration successful', code:0, details});
          sendEmail(email, name)
@@ -80,11 +78,13 @@ const Login = async(req,res)=> {
 }
 
 const createShop = async(req,res)=> {
-   const {name, town, type, socials, logo, location, phoneNumbers } = req.body
+   const {name, town, type, socials, logo, location, phoneNumbers, about } = req.body
    const{id}=req.params;
    try{
     const user = await getByID(id, 'users')
     if(!user){return res.status(404).json({error:'User not found', code:3})}
+    const shop = await getSingleItem({name}, 'shops')
+    if(shop){return res.status(400).json({error:'a shop with this name already exists use a different name', code:3})}
     const slug = slugify(name)
     const abbr = getAbbreviation(name)
     const data = {
@@ -99,10 +99,11 @@ const createShop = async(req,res)=> {
         phoneNumbers:phoneNumbers,
         typeID:type,
         name:name,
+        about
     }
     const insert = await insertData(data, 'shops')
     if(!insert){return res.status(404).json({error:insert, code:0})}
-    res.status(200).json(insert);
+    res.status(200).json({message: 'shop created successfully', code:0, insert});
 
    }catch(error){
     return res.status(500).json({error:error.message, code:3})
@@ -307,6 +308,19 @@ const updateTypes = async(req,res)=> {
     }
 }
 
+
+
+const searchShopTypes = async(req,res)=> {
+    const {term}=req.query;
+
+    try{
+        const data = await searchTypes(term);
+        res.status(200).json(data)
+    }catch(error){
+        res.status(500).json(error.message)
+    }
+}
+
 const getShopSingleShop = async(req,res)=> {
     try{
         const params = req.query.id ? {ownerID:req.query.id} : {slug:req.query.slug}
@@ -398,5 +412,6 @@ module.exports={
     findshop,
     removeMultiplefromBanner,
     getShopSingleShopByID,
-    resetPassword
+    resetPassword,
+    searchShopTypes
 }

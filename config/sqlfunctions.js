@@ -257,6 +257,9 @@ const findsingleShop = async(id) => {
     LIMIT 1`;
 
     const [results] = await db.query(sql, [id])
+    if(results.length < 1){
+      return false;
+    }
     return results[0];
   }catch(error){
     return error;
@@ -344,7 +347,7 @@ const fetchFeaturedShopCategories = async(id, featured, pageNumber) => {
 
 const searchData = async(term, table, pageNumber, id) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const searchTerm = `%${term}%`;
 
     const countSql = `SELECT COUNT(*) AS total FROM ${table} WHERE name LIKE ? AND shopID = ?`;
@@ -359,6 +362,21 @@ const searchData = async(term, table, pageNumber, id) => {
     const [rows] = await db.query(sql, [searchTerm, id, itemsPerPage, offset])
     const results = {totalPages, items:rows}
     return results;
+
+  } catch (error) {
+    return error.message;
+  }
+};
+
+const searchTypes = async(term) => {
+  try {
+
+    const searchTerm = `%${term}%`;
+
+    const sql = `SELECT * FROM shoptypes WHERE name LIKE ?`;
+
+    const [rows] = await db.query(sql, [searchTerm])
+    return rows;
 
   } catch (error) {
     return error.message;
@@ -1066,6 +1084,7 @@ module.exports={
     changePassword,
     getuserBYResetToken,
     searchShopProducts,
-    findAllCollectionsProducts
+    findAllCollectionsProducts,
+    searchTypes
     
 }

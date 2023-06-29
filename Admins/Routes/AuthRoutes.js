@@ -26,6 +26,8 @@ router.delete('/remove-multiple/:id', post.removeMultiplefromBanner);
 
 router.get('/fetch-shop-banner', post.fetchbanner)
 
+router.get('/search-types', post.searchShopTypes)
+
 router.get('/get-shops', post.fetchShops)
 
 router.get('/get-single-shop/:id', /*authenticateJwtToken, authAdmin,*/ post.getShopSingleShopByID)
