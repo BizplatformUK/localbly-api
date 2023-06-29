@@ -93,8 +93,8 @@ const changePassword = async(data, token) => {
 
 const findSingleUser = async(email, number)=> {
   try{
-    const sql = `SELECT * FROM users WHERE email = ? AND number = ?  LIMIT 1`
-    const [rows] = await db.query(sql, [email, number]);
+    const sql = `SELECT * FROM users WHERE email = '${email}' AND number = '${number}'  LIMIT 1`
+    const [rows] = await db.query(sql);
     if(rows.length < 1){
       return false
     }

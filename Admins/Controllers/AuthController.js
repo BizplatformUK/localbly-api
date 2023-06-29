@@ -1,7 +1,8 @@
 const {generateID, isValidPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
-const {ifExist, insertData,deleteMultipleItems, changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {sendEmail} = require('../../Emails/Controllers/EmailController')
+const {ifExist, insertData,deleteMultipleItems, findSingleUser,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
 
 
@@ -34,6 +35,7 @@ const Register = async(req,res)=> {
         const data = await insertData(user, 'users')
         if(data.code === 3){return res.status(500).json(data)}
         res.status(200).json(data);
+         sendEmail(email, name)
     }catch(error){
         res.status(500).json({err:error.message, code:3})
     }

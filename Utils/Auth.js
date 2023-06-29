@@ -54,9 +54,9 @@ function authRole(req,res,next){
     next()
 }
 
-function userExists(req,res,next){
+async function userExists(req,res,next){
     const {number, email} = req.body;
-    const user = findSingleUser(email, number);
+    const user = await findSingleUser(email, number);
     if(user){return res.status(400).json({error:'user already exists', code:3})}
     next();
 }

@@ -1,7 +1,7 @@
 const { EmailClient } = require("@azure/communication-email");
 const {serialKey} = require('../../Utils/Auth')
 const {getByID, getuserBYEmail, updateData} = require('../../config/sqlfunctions');
-const {passwordresetTemplate} = require('../emailTemplates')
+const {passwordresetTemplate, welcomeEmail} = require('../emailTemplates')
 
 require('dotenv').config()
 
@@ -35,11 +35,12 @@ async function pollEmailService(receiverEmailAddress, emailSubject,emailMessage)
   }
 }
 
-const sendEmail = async(req,res)=> {
-  const {email, subject, message} = req.body;
+const sendEmail = (email, name)=> {
   try{
-    const sent = pollEmailService(email, subject, message);
-    res.status(200).json(sent)
+    const message = welcomeEmail(name)
+    const subject = 'Welcome To Localbly'
+    const sent =  pollEmailService(email, subject, message);
+    return sent
   }catch(error){
     return res.status(500).json(error)
   }
