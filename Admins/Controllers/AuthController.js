@@ -34,7 +34,8 @@ const Register = async(req,res)=> {
         }
         const data = await insertData(user, 'users')
         if(data.code === 3){return res.status(500).json(data)}
-        res.status(200).json(data);
+        const details = {id:data.id, name:data.name}
+        res.status(200).json({message: 'Registration successful', code:0, details});
          sendEmail(email, name)
     }catch(error){
         res.status(500).json({err:error.message, code:3})
