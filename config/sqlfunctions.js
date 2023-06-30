@@ -171,7 +171,7 @@ const deleteMultipleItems = async(ids, shopid, table) => {
 
 const getData = async(table, id, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM ${table} WHERE shopID = ?`;
     const sql = `SELECT * FROM ${table} WHERE shopID = ? LIMIT ? OFFSET ?`; 
 
@@ -192,7 +192,7 @@ const getData = async(table, id, pageNumber) => {
 
 const getDataByParams = async(data, table, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM ${table} WHERE ?`;
     const sql = `SELECT * FROM ${table} WHERE ? LIMIT ? OFFSET ?`;
     const [count] = await db.query(countSql, [data])
@@ -269,7 +269,7 @@ const findsingleShop = async(id) => {
 
 const getShops = async(pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM shops`;
     const sql = `SELECT * FROM shops LIMIT ? OFFSET ?`; 
 
@@ -290,7 +290,7 @@ const getShops = async(pageNumber) => {
 
 const getShopTypes = async(pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM shopTypes`;
     const sql = `SELECT * FROM shopTypes LIMIT ? OFFSET ?`; 
 
@@ -326,7 +326,7 @@ const totalShopProducts = async(id) => {
 
 const fetchFeaturedShopCategories = async(id, featured, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM categories WHERE shopID = ? AND featured = ?`;
     const sql = `SELECT * FROM categories WHERE shopID = ? AND featured = ? LIMIT ? OFFSET ?`; 
 
@@ -385,7 +385,7 @@ const searchTypes = async(term) => {
 
 const filterShopCollections = async(id, featured, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM collections WHERE shopID = ? AND featured = ?`;
     const sql = `SELECT * FROM collections WHERE shopID = ? AND featured = ? LIMIT ? OFFSET ?`; 
 
@@ -406,7 +406,7 @@ const filterShopCollections = async(id, featured, pageNumber) => {
 
 const filterProductsNotInCollection = async(id, shopid, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ? AND (collectionsID <> ? OR collectionsID IS NULL)`;
     const sql = `SELECT * FROM products WHERE shopID = ? AND (collectionsID <> ? OR collectionsID IS NULL) LIMIT ? OFFSET ?`;
 
@@ -427,7 +427,7 @@ const filterProductsNotInCollection = async(id, shopid, pageNumber) => {
 
 const filterProductsNotInOffer = async (id, shopid, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const offset = (pageNumber - 1) * itemsPerPage;
     const offid = null;
 
@@ -451,7 +451,7 @@ const filterProductsNotInOffer = async (id, shopid, pageNumber) => {
 
 const findCurrentOffers = async(id, pageNumber) => {
   try{
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
 
     const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ?';
     const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ?';
@@ -474,7 +474,7 @@ const findCurrentOffers = async(id, pageNumber) => {
 
 const findPastOffers = async(id, pageNumber) => {
   try{
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
 
     const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom >= CURDATE() AND validTo <= CURDATE() AND shopID = ?';
     const sql = 'SELECT * FROM offers WHERE validFrom >= CURDATE() AND validTo <= CURDATE() AND shopID = ?';
@@ -495,7 +495,7 @@ const findPastOffers = async(id, pageNumber) => {
 
 const filterOfferTypes = async(id, type, pageNumber) => {
   try{
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
 
     const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND type = ?';
     const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND type = ?';
@@ -516,7 +516,7 @@ const filterOfferTypes = async(id, type, pageNumber) => {
 
 const filterOfferFeatured = async(id, featured, pageNumber) => {
   try{
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
 
     const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND featured = ?';
     const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND featured = ?';
@@ -570,7 +570,7 @@ const filterOfferFeatured = async(id, featured, pageNumber) => {
 
   const getshopClients = async(id, type, pageNumber) => {
     try {
-      const itemsPerPage = 6;
+      const itemsPerPage = 8;
       const countSql = `SELECT COUNT(*) AS total FROM clients WHERE shopID = ? AND clientType = ?`;
       const sql = `SELECT * FROM clients WHERE shopID = ? AND clientType = ? LIMIT ? OFFSET ?`; 
   
@@ -614,7 +614,7 @@ const filterOfferFeatured = async(id, featured, pageNumber) => {
 
   const findshopproducts = async(id,  pageNumber) => {
     try {
-      const itemsPerPage = 6;
+      const itemsPerPage = 8;
       const countSql = `SELECT COUNT(*) AS total FROM products WHERE shopID = ?`;
       const sql = `SELECT 
       products.*, 
@@ -647,7 +647,7 @@ const filterOfferFeatured = async(id, featured, pageNumber) => {
 
 const searchShopProducts = async(term, pageNumber, id) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const searchTerm = `%${term}%`;
 
     const countSql = `SELECT COUNT(*) AS total FROM products WHERE name LIKE ? AND shopID = ?`;
@@ -687,7 +687,7 @@ const searchShopProducts = async(term, pageNumber, id) => {
 
 const getOfferProducts = async(id, slug, pageNumber) => {
     try {
-      const itemsPerPage = 6;
+      const itemsPerPage = 8;
       const countSql = `SELECT COUNT(*) AS total FROM products
                           JOIN offers ON offers.id = products.offerID
                           WHERE offers.slug = ? AND products.shopID = ?`;
@@ -713,7 +713,7 @@ const getOfferProducts = async(id, slug, pageNumber) => {
 
 const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
     try {
-      const itemsPerPage = 6;
+      const itemsPerPage = 8;
       const countSql = `SELECT COUNT(*) AS total FROM products WHERE featuredHome = ? AND shopID = ?`;
 
       const sql = `SELECT 
@@ -751,7 +751,7 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
   const findFeaturedCategoryProducts = async(id, slug, featured, pageNumber) => {
 
     try {
-      const itemsPerPage = 6;
+      const itemsPerPage = 8;
       const countSql = `SELECT COUNT(*) AS total FROM products
                           JOIN categories ON categories.id = products.categoryID
                           WHERE categories.slug = ? AND products.shopID = ? AND products.featuredCategory = ?`;
@@ -791,7 +791,7 @@ const fetchFeaturedHomeProducts = async(id, featured,  pageNumber) => {
 
   const findSubcategoryProducts = async(id, slug, pageNumber) => {
     try {
-      const itemsPerPage = 6;
+      const itemsPerPage = 8;
       const countSql = `SELECT COUNT(*) AS total FROM products p
                           JOIN categories c ON p.categoryID = c.id
                           JOIN subcategories sc on p.subcategoryID = sc.id
@@ -845,7 +845,7 @@ const findSingleProductBySlug = async(id, slug ) => {
 
 const findCollectionsProducts = async(id, slug, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM products p
                         JOIN collections c ON p.collectionsID = c.id
                         WHERE c.slug = ? AND p.shopID = ? AND p.featuredHome != 1`;
@@ -888,7 +888,7 @@ const findCollectionsProducts = async(id, slug, pageNumber) => {
 
 const findAllCollectionsProducts = async(id, slug, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM products p
                         JOIN collections c ON p.collectionsID = c.id
                         WHERE c.slug = ? AND p.shopID = ? `;
@@ -958,7 +958,7 @@ const getUsers = async() => {
 
 const getSubcategoriesByCategorySlug = async(slug, id, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM subcategories
                         JOIN categories ON categories.id = subcategories.categoryID
                         WHERE categories.slug = ? AND subcategories.shopID = ?`;
@@ -982,7 +982,7 @@ const getSubcategoriesByCategorySlug = async(slug, id, pageNumber) => {
 
 const getSubcategoriesByCategoryID = async(id, catId, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM subcategories
                         JOIN categories ON categories.id = subcategories.categoryID
                         WHERE categories.id = ? AND subcategories.shopID = ?`;
@@ -1010,7 +1010,7 @@ const getSubcategoriesByCategoryID = async(id, catId, pageNumber) => {
 
 const fetchShopSubcategories = async(id, pageNumber) => {
   try {
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const countSql = `SELECT COUNT(*) AS total FROM subcategories WHERE shopID = ?`;
     const sql = `SELECT subcategories.*, categories.slug AS categorySlug, categories.name AS category
                          FROM subcategories
