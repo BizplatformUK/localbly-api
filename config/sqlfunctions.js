@@ -240,9 +240,11 @@ const isPresentInBanner = async(id, shopid)=> {
 const getSingleItem = async(data,table)=> {
   try{
     const sql = `SELECT * FROM ${table} WHERE ? LIMIT 1`
-    const [result] = await db.query(sql, [data])
-    return result[0]
-
+    const [results] = await db.query(sql, [data])
+    if(results.length < 1){
+      return false;
+    }
+    return results[0]
   }catch(error){
       return error.message
   }

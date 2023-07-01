@@ -70,7 +70,9 @@ const Login = async(req,res)=> {
     if(!validPassword){return res.status(401).json({error:'You entered an incorrect password, please check and try again', code:3})}
     const data = {name:user.name, email:user.email, id:user.id, role:user.role}
     const token = generateAccessToken(data)
-    const response = {user:'Login Success', token, id:user.id, name:user.name, email:user.email, role:user.role}
+    const shop = await getSingleItem({ownerID:user.id}, 'shops')
+    const hasShop = !shop ?  false : true
+    const response = {user:'Login Success', token, id:user.id, name:user.name, email:user.email, role:user.role, hasShop}
     res.status(200).json(response)
     }catch(error){
         return res.status(500).json(error.message)
