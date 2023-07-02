@@ -125,6 +125,26 @@ function compareStrings(str1, str2) {
     return similarity > 0.5;
 }
 
+ function formatPhoneNumber(phoneNumber) {
+    // Remove any non-digit characters from the phone number
+    phoneNumber = phoneNumber.replace(/\D/g, '');
+  
+    // Check if the phone number already starts with '+254'
+    if (phoneNumber.startsWith('254')) {
+      return phoneNumber; // Return the number as is
+    }
+  
+    // Check if the phone number starts with a '0'
+    if (phoneNumber.startsWith('0')) {
+      // Replace the '0' with '+254'
+      phoneNumber = '254' + phoneNumber.substr(1);
+    } else {
+      phoneNumber = '254' + phoneNumber; // Add '+254' prefix
+    }
+  
+    return phoneNumber;
+  }
+
 const piclink = `https://localblyimages.blob.core.windows.net/images/logo.png`
 
 module.exports = {
@@ -145,5 +165,6 @@ module.exports = {
     getDiscountPrice,
     extractFileNameFromUrl,
     piclink,
-    compareStrings
+    compareStrings,
+    formatPhoneNumber
 }

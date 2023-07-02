@@ -1,4 +1,4 @@
-const {generateID, isValidPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
+const {generateID, isValidPhoneNumber, formatPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
 const {sendEmail} = require('../../Emails/Controllers/EmailController')
@@ -226,7 +226,7 @@ const updateShop = async(req,res)=> {
             phoneNumbers,
             email,
             brandcolor:color,
-            whatsappnumber:whatsappNo,
+            whatsappnumber:formatPhoneNumber(whatsappNo),
             facebooklink:fb,
             instagramlink:instagram
         }
