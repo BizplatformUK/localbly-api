@@ -42,7 +42,7 @@ router.get('/count/:id', post.countShopProducts)
 
 router.post('/add-shop/:id',  post.createShop)
 
-router.post('/update-shop/:id', authenticateJwtToken, authRole, post.updateShop)
+router.post('/update-shop/:id', /*authenticateJwtToken, authRole,*/ post.updateShop)
 
 //router.post('/approve-admin/:id', authenticateJwtToken, authRole, post.approveAdmin)
 

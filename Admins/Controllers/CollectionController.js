@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {deleteBlob} = require('../Images/ImageController')
-const {insertData, updateData, deleteData, addMultipleProductsToCollections, filterShopCollections, isPresentInBanner, dbCheck, getDataByParams, getByID, getDataByMultipleParams, searchData} = require('../../config/sqlfunctions')
+const {insertData, updateData, deleteData, addMultipleProductsToCollections, findShopCollectionswithProducts, filterShopCollections, isPresentInBanner, dbCheck, getDataByParams, getByID, getDataByMultipleParams, searchData} = require('../../config/sqlfunctions')
 
 const addCollection = async(req,res)=> {
     const {name, image, featured} = req.body
@@ -73,7 +73,6 @@ const editCollectionFeatured = async(req,res)=> {
         const params = {featured}
         const data = await updateData(colId, params, 'collections');
         if(!data){return res.sendStatus(500)}
-        //const response =  {id:data.id, name:data.name, picture:data.picture, featured:data.featured, date:data.createdAt}
         res.status(200).json({message:'collection updated successfully', code:0, response:data})
 
     }catch(error){
@@ -174,6 +173,19 @@ const fetchFeaturedCollections = async(req,res)=> {
     }
 }
 
+
+
+const getFeaturedCollectionsWithProducts = async(req,res)=> {
+    const {id} = req.query;
+    try{
+        const collections = await findShopCollectionswithProducts(id, true);
+        return res.status(200).json(collections)
+ 
+    }catch(error){
+        return res.status(500).json(error.message)
+    }
+}
+
 const fetchStandardCollections = async(req,res)=> {
     const {id,page} = req.query;
     try{
@@ -228,4 +240,4 @@ const searchCollections = async(req,res)=> {
     }
 }
 
-module.exports={addCollection, editCollectionFeatured, addproductsToCollections, editCollections, fetchCollections, deleteCollection, searchCollections, fetchFeaturedCollections, fetchStandardCollections}
+module.exports={addCollection, getFeaturedCollectionsWithProducts, editCollectionFeatured, addproductsToCollections, editCollections, fetchCollections, deleteCollection, searchCollections, fetchFeaturedCollections, fetchStandardCollections}

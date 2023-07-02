@@ -206,7 +206,7 @@ const resetPassword = async(req,res)=> {
 
 
 const updateShop = async(req,res)=> {
-    const {name, town, logo, location, phoneNumbers, email, color} = req.body
+    const {name, town, logo, location, phoneNumbers, email, color, whatsappNo, fb, instagram} = req.body
     const {id}= req.params;
     const shop = await getByID(id, 'shops')
     if(!shop){return res.status(404).json({error:'Shop not found', code:3})}
@@ -225,7 +225,10 @@ const updateShop = async(req,res)=> {
             location,
             phoneNumbers,
             email,
-            brandcolor:color
+            brandcolor:color,
+            whatsappnumber:whatsappNo,
+            facebooklink:fb,
+            instagramlink:instagram
         }
         const result = await updateData(id, params, 'shops');
         if(!result){return res.status(404).json({error:result, code:3})}

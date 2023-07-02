@@ -11,6 +11,8 @@ router.delete('/delete-collection/:id', authenticateJwtToken, authAdmin, post.de
 
 router.get('/get-collections', post.fetchCollections)
 
+router.get('/get-frontend-collections', post.getFeaturedCollectionsWithProducts)
+
 router.post('/add-to-collection/:id', post.addproductsToCollections)
 
 router.patch('/edit-collection-featured/:id', authenticateJwtToken, authAdmin, post.editCollectionFeatured)

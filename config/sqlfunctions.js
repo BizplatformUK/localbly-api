@@ -406,6 +406,24 @@ const filterShopCollections = async(id, featured, pageNumber) => {
   }
 };
 
+const findShopCollectionswithProducts = async(id, featured) => {
+  try {
+    const sql = `SELECT *
+    FROM collections
+    WHERE shopID = ? 
+    AND featured = ? 
+    AND id IN (SELECT DISTINCT collectionsID FROM products)`; 
+
+    const [rows] = await db.query(sql, [id, featured])
+    return rows;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
+
+
 const filterProductsNotInCollection = async(id, shopid, pageNumber) => {
   try {
     const itemsPerPage = 8;
@@ -1087,6 +1105,7 @@ module.exports={
     getuserBYResetToken,
     searchShopProducts,
     findAllCollectionsProducts,
-    searchTypes
+    searchTypes,
+    findShopCollectionswithProducts
     
 }
