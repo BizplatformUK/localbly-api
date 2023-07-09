@@ -57,7 +57,6 @@ const editService = async(req,res)=> {
         }
         const data = await updateData(serviceId, params,  'services')
         if(!data){return res.sendStatus(500)}
-        //const response = {id:data.id, name:data.name, picture:data.picture, slug:data.slug, description:data.description}
         res.status(200).json({message:'service updated successfully', code:0, response:data})
 
     }catch(error){
