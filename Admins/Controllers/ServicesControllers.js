@@ -11,7 +11,7 @@ const addService = async(req,res)=> {
         if(!shop){return res.sendStatus(404)}
         const items = {name, id}
         const find = await dbCheck(items, 'services')
-        if(service){return res.status(400).json({error: 'A service with this name already exists please use a different name', code:3})}
+        if(find){return res.status(400).json({error: 'A service with this name already exists please use a different name', code:3})}
         const slug = slugify(name)
         const abbr = getAbbreviation(name)
         const params = {
@@ -28,7 +28,7 @@ const addService = async(req,res)=> {
         //const response = {name:insert.name, price:insert.price, id:insert.id, image:insert.picture}
         res.status(200).json({message: 'Service uploaded successfully',  code:0, response:insert})
     }catch(error){
-        return res.status(500).json(error)
+        return res.status(500).json(error.message)
     }
 }
 

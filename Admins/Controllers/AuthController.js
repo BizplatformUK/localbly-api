@@ -4,6 +4,32 @@ const {deleteBlob} = require('../Images/ImageController');
 const {sendEmail} = require('../../Emails/Controllers/EmailController')
 const {ifExist, insertData,deleteMultipleItems, searchTypes,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
+const axios = require('axios')
+
+
+const getCountries = async (country) => {
+    try {
+      const response = await axios.get(`https://restcountries.com/v3.1/name/${country}`);
+      const data = response.data;
+  
+      // Extract currency data from the 'data' object
+      const countryData = data[0]; // Assuming the API returns an array with a single country object
+  
+      const currencyData = countryData.currencies;
+      const currencies = Object.keys(currencyData).map((currencyCode) => {
+        const currencyInfo = currencyData[currencyCode];
+        return {
+          code: currencyCode,
+          name: currencyInfo.name,
+          symbol: currencyInfo.symbol,
+        };
+      });
+  
+      return currencies[0].symbol;
+    } catch (error) {
+      return error
+    }
+  };
 
 
 const findshop = async(req,res)=> {
@@ -64,6 +90,7 @@ const getSingleUser = async(req,res)=> {
 const Login = async(req,res)=> {
     const {email, password}=req.body
     try{
+    
     const user = await getuserBYEmail(email);
     if(!user){return res.status(404).json({error:'Sorry, but the email address you entered is not registered, please check and try again', code:3})}
     const validPassword = await bcrypt.compare(password, user.password)
@@ -80,13 +107,14 @@ const Login = async(req,res)=> {
 }
 
 const createShop = async(req,res)=> {
-   const {name, town, type, socials, logo, location, phoneNumbers, about } = req.body
+   const {name, town, type, socials, logo, location, phoneNumbers, about, country } = req.body
    const{id}=req.params;
    try{
     const user = await getByID(id, 'users')
     if(!user){return res.status(404).json({error:'User not found', code:3})}
     const shop = await getSingleItem({name}, 'shops')
     if(shop){return res.status(400).json({error:'a shop with this name already exists use a different name', code:3})}
+    const currency = await getCountries(country);
     const slug = slugify(name)
     const abbr = getAbbreviation(name)
     const data = {
@@ -101,7 +129,9 @@ const createShop = async(req,res)=> {
         phoneNumbers:phoneNumbers,
         typeID:type,
         name:name,
-        about
+        about,
+        country,
+        currency
     }
     const insert = await insertData(data, 'shops')
     if(!insert){return res.status(404).json({error:insert, code:0})}
@@ -206,10 +236,11 @@ const resetPassword = async(req,res)=> {
 
 
 const updateShop = async(req,res)=> {
-    const {name, town, logo, location, phoneNumbers, email, color, whatsappNo, fb, instagram} = req.body
+    const {name, town, logo, location, phoneNumbers, email, color, whatsappNo, fb, instagram, country} = req.body
     const {id}= req.params;
     const shop = await getByID(id, 'shops')
     if(!shop){return res.status(404).json({error:'Shop not found', code:3})}
+    const currency = await getCountries(country);
     const imgName = extractFileNameFromUrl(shop.logo)
     const editImg = extractFileNameFromUrl(logo);
     const strSimilar = compareStrings(imgName, editImg)
@@ -226,9 +257,11 @@ const updateShop = async(req,res)=> {
             phoneNumbers,
             email,
             brandcolor:color,
-            whatsappnumber:formatPhoneNumber(whatsappNo),
+            whatsappnumber:whatsappNo,
             facebooklink:fb,
-            instagramlink:instagram
+            instagramlink:instagram,
+            country,
+            currency
         }
         const result = await updateData(id, params, 'shops');
         if(!result){return res.status(404).json({error:result, code:3})}

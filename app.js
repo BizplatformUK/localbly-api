@@ -26,9 +26,9 @@ app.use((req, res, next)=> {
 })
 
 
-  app.listen(process.env.PORT, ()=> {
-    console.log('listening on port 8080')
-  })
+app.listen(process.env.PORT, ()=> {
+  console.log('listening on port 8080')
+})
 
 
 app.use('/auth', Auth)
@@ -41,6 +41,10 @@ app.use('/products', products)
 app.use('/images', images)
 app.use('/collections', collections)
 app.use('/email', emails)
+app.post('/generate/:id', (req,res)=> {
+  //const {text} = req.body;
+  res.status(200).json(req.params);
+})
 
 
 
