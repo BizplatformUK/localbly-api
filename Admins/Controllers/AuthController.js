@@ -99,7 +99,7 @@ const Login = async(req,res)=> {
     const token = generateAccessToken(data)
     const shop = await getSingleItem({ownerID:user.id}, 'shops')
     const hasShop = !shop ?  false : true
-    const response = {user:'Login Success', token, id:user.id, name:user.name, email:user.email, role:user.role, hasShop}
+    const response = {user:'Login Success', token, id:user.id, name:user.name, email:user.email, role:user.role, shopSlug:shop.slug, hasShop}
     res.status(200).json(response)
     }catch(error){
         return res.status(500).json(error.message)
