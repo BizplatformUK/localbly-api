@@ -272,7 +272,9 @@ const getshopProducts = async(req,res)=> {
     try{
         const pageNumber = parseInt(page)|| 1;
         const products = await findshopproducts(id, pageNumber);
-        return res.status(200).json(products)
+        const shop = await getSingleItem({id}, 'shops')
+        const items = products.items;
+        return res.status(200).json({totalPages:products.totalPages, currency:shop.currency, items})
 
     }catch(error){
         return res.status(400).json({err: error.message})
@@ -284,7 +286,9 @@ const searchProducts = async(req,res)=> {
     try{
         const pageNumber = parseInt(page )|| 1;
         const products = await searchShopProducts(term,  pageNumber, id);
-        return res.status(200).json(products)
+        const shop = await getSingleItem({id}, 'shops')
+        const items = products.items;
+        return res.status(200).json({totalPages:products.totalPages, currency:shop.currency, items})
 
     }catch(error){
         return res.status(400).json(error)
