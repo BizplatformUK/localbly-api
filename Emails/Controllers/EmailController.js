@@ -1,7 +1,7 @@
 const { EmailClient } = require("@azure/communication-email");
 const {serialKey} = require('../../Utils/Auth')
 const {getByID, getuserBYEmail, updateData} = require('../../config/sqlfunctions');
-const {passwordresetTemplate, welcomeEmail} = require('../emailTemplates')
+const {passwordresetTemplate, welcomeEmail, adminEmail} = require('../emailTemplates')
 
 require('dotenv').config()
 
@@ -35,11 +35,31 @@ async function pollEmailService(receiverEmailAddress, emailSubject,emailMessage)
   }
 }
 
-const sendEmail = (email, name)=> {
+const sendEmail = async(email, shopID, name)=> {
   try{
-    const message = welcomeEmail(name)
+    let message = ''
     const subject = 'Welcome To Localbly'
-    const sent =  pollEmailService(email, subject, message);
+    if(shopID){
+      const shop = await getByID(shopID, 'shops')
+      const shopName = shop.name;
+      message = adminEmail(name, shopName)
+    } else{
+      message = welcomeEmail(name)
+    }
+    const sent =  await pollEmailService(email, subject, message);
+    return sent
+  }catch(error){
+    return res.status(500).json(error)
+  }
+}
+
+const confirmAdminEmail = async(email, shopID, name)=> {
+  try{
+    const shop = await getByID(shopID, 'shops')
+    const shopName = shop.name;
+    const subject = 'Approval Successful'
+    const message = adminApprovalEmail(name, shopName);
+    const sent =  await pollEmailService(email, subject, message);
     return sent
   }catch(error){
     return res.status(500).json(error)
@@ -74,4 +94,4 @@ const resetPassword = async(req,res)=> {
   
  
 
-module.exports={sendEmail, resetPassword}
+module.exports={sendEmail, resetPassword, confirmAdminEmail}

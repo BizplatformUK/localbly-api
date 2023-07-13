@@ -94,7 +94,7 @@ function welcomeEmail(name) {
             <tbody>
               <tr>
                 <td>
-                  <a href="https://localbly.azurewebsites.net/login" target="_blank" style="background-color:#109cf1;border-radius:3px;color:#fff;font-size:16px;text-decoration:none;text-align:center;display:inline-block;p-x:12px;p-y:12px;line-height:100%;max-width:100%;padding:12px 12px">
+                  <a href="https://dashboard.localbly.shop/" target="_blank" style="background-color:#109cf1;border-radius:3px;color:#fff;font-size:16px;text-decoration:none;text-align:center;display:inline-block;p-x:12px;p-y:12px;line-height:100%;max-width:100%;padding:12px 12px">
                     <span style="background-color:#109cf1;border-radius:3px;color:#fff;font-size:16px;text-decoration:none;text-align:center;display:inline-block;p-x:12px;p-y:12px;max-width:100%;line-height:120%;text-transform:none;mso-padding-alt:0px;mso-text-raise:9px">Get started</span>
                   </a>
                 </td>
@@ -112,4 +112,55 @@ function welcomeEmail(name) {
   `;
 }
 
-module.exports={passwordResetTemplate, passwordresetTemplate, welcomeEmail}
+function adminApprovalEmail(name, shopName) {
+  return `
+    <html>
+      <body>
+      <table align="center" role="presentation" cellSpacing="0" cellPadding="0" border="0" width="100%" style="max-width:37.5em;margin:0 auto;padding:20px 0 48px">
+      <tr style="width:100%">
+        <td><img alt="Koala" src="https://localblyimages.blob.core.windows.net/logos/logo.png" width="170" height="50" style="display:block;outline:none;border:none;text-decoration:none;margin:0 auto" />
+          <p style="font-size:16px;line-height:26px;margin:16px 0; color:#111111">Hi ${name},</p>
+          <p style="font-size:16px;line-height:26px;margin:16px 0; color:#111111">Your account has been approved as an admin of ${shopName}. You can now login to your account</p>
+          <table style="text-align:center" align="center" border="0" cellPadding="0" cellSpacing="0" role="presentation" width="100%">
+            <tbody>
+              <tr>
+                <td>
+                  <a href="https://dashboard.localbly.shop/" target="_blank" style="background-color:#109cf1;border-radius:3px;color:#fff;font-size:16px;text-decoration:none;text-align:center;display:inline-block;p-x:12px;p-y:12px;line-height:100%;max-width:100%;padding:12px 12px">
+                    <span style="background-color:#109cf1;border-radius:3px;color:#fff;font-size:16px;text-decoration:none;text-align:center;display:inline-block;p-x:12px;p-y:12px;max-width:100%;line-height:120%;text-transform:none;mso-padding-alt:0px;mso-text-raise:9px">Login</span>
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size:16px;line-height:26px;margin:16px 0">Best,<br />The Localbly team</p>
+          <hr style="width:100%;border:none;border-top:1px solid #eaeaea;border-color:#cccccc;margin:20px 0" />
+          <p style="font-size:12px;line-height:24px;margin:16px 0;color:#8898aa"> ©copyright 2023 Localbly All Rights Reserved </p>
+        </td>
+      </tr>
+    </table>
+      </body>
+    </html>
+  `;
+}
+
+function adminEmail(name, shopName) {
+  return `
+    <html>
+      <body>
+      <table align="center" role="presentation" cellSpacing="0" cellPadding="0" border="0" width="100%" style="max-width:37.5em;margin:0 auto;padding:20px 0 48px">
+      <tr style="width:100%">
+        <td><img alt="Koala" src="https://localblyimages.blob.core.windows.net/logos/logo.png" width="170" height="50" style="display:block;outline:none;border:none;text-decoration:none;margin:0 auto" />
+          <p style="font-size:16px;line-height:26px;margin:16px 0; color:#111111">Hi ${name},</p>
+          <p style="font-size:16px;line-height:26px;margin:16px 0; color:#111111">Welcome to Localbly. You have registered to be an admin of ${shopName} you will be able to access your account after the shop owner has approved you</p>
+          <p style="font-size:16px;line-height:26px;margin:16px 0">Best,<br />The Localbly team</p>
+          <hr style="width:100%;border:none;border-top:1px solid #eaeaea;border-color:#cccccc;margin:20px 0" />
+          <p style="font-size:12px;line-height:24px;margin:16px 0;color:#8898aa"> ©copyright 2023 Localbly All Rights Reserved </p>
+        </td>
+      </tr>
+    </table>
+      </body>
+    </html>
+  `;
+}
+
+module.exports={passwordResetTemplate, passwordresetTemplate, welcomeEmail, adminEmail, adminApprovalEmail}

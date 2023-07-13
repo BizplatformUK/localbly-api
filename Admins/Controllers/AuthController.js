@@ -1,8 +1,8 @@
-const {generateID, isValidPhoneNumber, formatPhoneNumber, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
-const {generateAccessToken, hashPassword, checkPassword} = require('../../Utils/Auth')
+const {generateID, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
+const {generateAccessToken, hashPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
-const {sendEmail} = require('../../Emails/Controllers/EmailController')
-const {ifExist, insertData,deleteMultipleItems, searchTypes,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {sendEmail, confirmAdminEmail} = require('../../Emails/Controllers/EmailController')
+const {insertData,deleteMultipleItems, findShopAdmins, searchTypes, getuserBYNumber,  deleteData,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
 const axios = require('axios')
 
@@ -42,11 +42,15 @@ const findshop = async(req,res)=> {
 }
 
 const Register = async(req,res)=> {
-    const {name, email, number, password, role}= req.body
+    const {name, email, number, password, role, shopID}= req.body
     try{
         
         const isEmailValid = isValidEmail(email);
         if(!isEmailValid){return res.status(404).json({error:'Please provide a valid email address', code:3})}
+        const userCheck = await getuserBYEmail(email);
+        if(userCheck){return res.status(401).json({error: 'A user with this email address already exists, please use a different', code:3})} 
+        const userNumber = await getuserBYNumber(number)
+        if(userNumber){return res.status(401).json({error: 'A user with this phone number already exists please use a different one', code:3})}
         const hashedPassword = await hashPassword(password);
         const user = {
             name:name,
@@ -55,12 +59,14 @@ const Register = async(req,res)=> {
             password:hashedPassword,
             role:role,
             id: generateID(),
+            shopID,
+            approved: role === 'super-admin' ? true : false
         }
         const data = await insertData(user, 'users')
         if(!data){return res.status(500).json(data)}
         const details = {id:data.id, name:data.name}
         res.status(200).json({message: 'Registration successful', code:0, details});
-         sendEmail(email, name)
+        await sendEmail(email, shopID, name)
     }catch(error){
         res.status(500).json({err:error.message, code:3})
     }
@@ -86,6 +92,15 @@ const getSingleUser = async(req,res)=> {
     }
 }
 
+const getShopAdmins = async(req,res)=> {
+    const approved = req.query.approved === 'true'
+    try{
+        const users = await findShopAdmins(req.query.id, approved)
+        res.status(200).json(users)
+    }catch(error){
+        return res.status(500).json(error.message)
+    }
+}
 
 const Login = async(req,res)=> {
     const {email, password}=req.body
@@ -93,16 +108,64 @@ const Login = async(req,res)=> {
     
     const user = await getuserBYEmail(email);
     if(!user){return res.status(404).json({error:'Sorry, but the email address you entered is not registered, please check and try again', code:3})}
+    if(!user.approved){return res.status(401).json({error: 'Your admin account has not been approved yet', code:3})}
     const validPassword = await bcrypt.compare(password, user.password)
     if(!validPassword){return res.status(401).json({error:'You entered an incorrect password, please check and try again', code:3})}
     const data = {name:user.name, email:user.email, id:user.id, role:user.role}
     const token = generateAccessToken(data)
-    const shop = await getSingleItem({ownerID:user.id}, 'shops')
+    const shop = await getSingleItem({id:user.shopID}, 'shops')
     const hasShop = !shop ?  false : true
-    const response = {user:'Login Success', token, id:user.id, name:user.name, email:user.email, role:user.role, shopSlug:shop.slug, hasShop}
+    const response = {user:'Login Success', token, id:user.id, name:user.name, email:user.email, role:user.role, shopSlug:shop.slug, hasShop, shopid:user.shopID}
     res.status(200).json(response)
     }catch(error){
         return res.status(500).json(error.message)
+    }
+}
+
+
+
+
+const approveAdmin = async(req,res)=> {
+    const{id}=req.params
+    const admin = await getByID(id, 'users')
+    if(!admin){return res.status(404).json({error: 'user not found', code:3})}
+    try{
+        const params = {approved:true} 
+        const approve = await updateData(id, params, 'users');
+        if(!approve){return res.sendStatus(404)}
+        res.status(200).json({message:'admin approved successfully', code:0})
+        await confirmAdminEmail(admin.email, admin.shopID, admin.name)
+    }catch(error){
+        return res.status(500).json(error)
+    }
+}
+
+
+const suspendAdmin = async(req,res)=> {
+    const{id}=req.params
+    const admin = await getByID(id, 'users')
+    if(!admin){return res.sendStatus(404)}
+    try{
+        const params = {approved:false}
+        const approve = await updateData(id, params, 'users')
+        if(!approve){return res.status(404).json({error:'user not found', code:3})}
+        res.status(200).json({message:'admin suspended successfully', code:0})
+    }catch(error){
+        return res.status(200).json(error)
+    }
+}
+
+const deleteAdmin = async(req,res)=> {
+    const{id}=req.params;
+    const {shopID} = req.body;
+    const admin = await getByID(id, 'users')
+    if(!admin){return res.status(404).json({error: 'no admin found'})}
+    try{
+        const approve = await deleteData(id, shopID, 'users')
+        if(!approve){return res.status(404).json({error:'admin not found', code:3})}
+        res.status(200).json({message:'admin deleted successfully', code:0})
+    }catch(error){
+        return res.status(200).json(error.message)
     }
 }
 
@@ -117,8 +180,9 @@ const createShop = async(req,res)=> {
     const currency = await getCountries(country);
     const slug = slugify(name)
     const abbr = getAbbreviation(name)
+    const shopid = abbr + generateID();
     const data = {
-        id: abbr + generateID(),
+        id:shopid,
         slug:slug,
         town:town,
         version:'Free Trial',
@@ -135,6 +199,8 @@ const createShop = async(req,res)=> {
     }
     const insert = await insertData(data, 'shops')
     if(!insert){return res.status(404).json({error:insert, code:0})}
+    const params = {shopID:shopid}
+    const update = updateData(id, params, 'users')
     res.status(200).json({message: 'shop created successfully', code:0, insert});
 
    }catch(error){
@@ -273,50 +339,7 @@ const updateShop = async(req,res)=> {
     }
 }
 
-/*
-const approveAdmin = async(req,res)=> {
-    const{id}=req.params
-    const admin = await findOne({_id:id}, collection)
-    if(!admin){return res.sendStatus(404)}
-    try{
-        const params = {status:0, token:generateToken()} 
-        const approve = await updateData(id, params, collection)
-        if(!approve){return res.sendStatus(404)}
-        res.status(200).json({message:'admin approved successfully'})
-    }catch(error){
-        return res.status(200).json(error)
-    }
-}
 
-
-const suspendAdmin = async(req,res)=> {
-    const{id}=req.params
-    const admin = await findOne({_id:id}, collection)
-    if(!admin){return res.sendStatus(404)}
-    try{
-        const params = {status:3, token:null}
-        const approve = await updateData(id, params, collection)
-        if(!approve){return res.sendStatus(404)}
-        res.status(200).json({message:'admin suspended successfully'})
-    }catch(error){
-        return res.status(200).json(error)
-    }
-}
-
-const deleteAdmin = async(req,res)=> {
-    const{id}=req.params;
-    const admin = await findOne({_id:id}, collection)
-    if(!admin){return res.sendStatus(404)}
-    try{
-        const params = {_id:id}
-        const approve = await deleteData(params, collection)
-        if(!approve){return res.sendStatus(404)}
-        res.status(200).json({message:'admin deleted successfully'})
-    }catch(error){
-        return res.status(200).json(error)
-    }
-
-}*/
 
 const addTypes = async(req,res)=> {
     const {name, picture} = req.body;
@@ -451,5 +474,9 @@ module.exports={
     removeMultiplefromBanner,
     getShopSingleShopByID,
     resetPassword,
-    searchShopTypes
+    searchShopTypes,
+    approveAdmin,
+    suspendAdmin,
+    deleteAdmin,
+    getShopAdmins
 }

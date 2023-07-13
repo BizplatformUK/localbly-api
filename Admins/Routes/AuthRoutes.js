@@ -30,7 +30,7 @@ router.get('/search-types', post.searchShopTypes)
 
 router.get('/get-shops', post.fetchShops)
 
-router.get('/get-single-shop/:id', /*authenticateJwtToken, authAdmin,*/ post.getShopSingleShopByID)
+router.get('/get-single-shop/:id', authenticateJwtToken, authAdmin, post.getShopSingleShopByID)
 
 router.get('/fetch-shop', post.getShopSingleShop)
 
@@ -42,13 +42,15 @@ router.get('/count/:id', post.countShopProducts)
 
 router.post('/add-shop/:id',  post.createShop)
 
-router.post('/update-shop/:id', /*authenticateJwtToken, authRole,*/ post.updateShop)
+router.get('/get-admins', post.getShopAdmins)
 
-//router.post('/approve-admin/:id', authenticateJwtToken, authRole, post.approveAdmin)
+router.post('/update-shop/:id', authenticateJwtToken, authRole, post.updateShop)
 
-//router.post('/suspend-admin/:id', authenticateJwtToken, authRole, post.suspendAdmin )
+router.post('/approve-admin/:id', authenticateJwtToken, authRole, post.approveAdmin)
 
-//router.delete('/delete-admin/:id', authenticateJwtToken, authRole, post.deleteAdmin)
+router.post('/suspend-admin/:id', authenticateJwtToken, authRole, post.suspendAdmin )
+
+router.delete('/delete-admin/:id', authenticateJwtToken, authRole, post.deleteAdmin)
 
 router.post('/add-type', authenticateJwtToken, authRole, post.addTypes)
 

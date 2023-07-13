@@ -65,6 +65,20 @@ const getuserBYEmail = async(email)=> {
   }
 }
 
+const getuserBYNumber = async(number)=> {
+  try{
+    const sql = `SELECT * FROM users WHERE number = ? LIMIT 1`
+    const [rows] = await db.query(sql, [number]);
+    if(rows.length < 1){
+      return false
+    }
+    return rows[0];
+
+  }catch(error){
+      return error.message
+  }
+}
+
 const getuserBYResetToken = async(token)=> {
   try{
     const sql = `SELECT * FROM users WHERE resetToken = ? LIMIT 1`
@@ -167,6 +181,25 @@ const deleteMultipleItems = async(ids, shopid, table) => {
  
 };
 
+const findShopAdmins = async(id, approved) => {
+  try {
+    const sql = `SELECT 
+     id AS id,
+     name AS name,
+     email AS email,
+     role AS role,
+     shopID AS shopID,
+     approved AS approved
+     FROM users WHERE shopID = ? AND approved = ? AND role != 'super-admin' ORDER BY createdAt DESC`; 
+
+    const [rows] = await db.query(sql, [id, approved])
+    return rows;
+   
+  } catch (error) {
+    return error.message;
+  }
+};
+
 
 
 const getData = async(table, id, pageNumber) => {
@@ -255,7 +288,7 @@ const findsingleShop = async(id) => {
     const sql = `SELECT s.*, st.name AS shopType
     FROM shops s
     JOIN shopTypes st ON s.typeID = st.id
-    WHERE s.ownerID = ?
+    WHERE s.id = ?
     LIMIT 1`;
 
     const [results] = await db.query(sql, [id])
@@ -1106,6 +1139,8 @@ module.exports={
     searchShopProducts,
     findAllCollectionsProducts,
     searchTypes,
-    findShopCollectionswithProducts
+    findShopCollectionswithProducts,
+    getuserBYNumber,
+    findShopAdmins
     
 }
