@@ -3,12 +3,12 @@ const {authenticateJwtToken, authAdmin, productLimit} = require('../../Utils/Aut
 const post = require('../Controllers/ProductsControllers');
 const router = express.Router();
 
-router.post('/add-product/:id', authenticateJwtToken, authAdmin, productLimit, post.addProduct)
+router.post('/add-product/:id', authenticateJwtToken, authAdmin, post.addProduct)
 
-router.patch('/edit-product/:id', /*authenticateJwtToken, authAdmin,*/ post.editProduct)
+router.patch('/edit-product/:id', authenticateJwtToken, authAdmin, post.editProduct)
 
 
-router.delete('/delete-product/:id', /*authenticateJwtToken, authAdmin,*/ post.deleteProducts)
+router.delete('/delete-product/:id', authenticateJwtToken, authAdmin, post.deleteProducts)
 
 
 router.patch('/featured-category', authenticateJwtToken, post.addFeaturedCategoryProducts)

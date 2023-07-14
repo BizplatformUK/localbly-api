@@ -15,7 +15,7 @@ router.delete('/remove-from-featured', authenticateJwtToken, authAdmin, post.rem
 
 router.post('/add-to-offers/:id', authenticateJwtToken, authAdmin, post.addProductstoOffers)
 
-router.delete('/remove-products-offers/:id', /*authenticateJwtToken, authAdmin,*/ post.removeProductstoOffers)
+router.delete('/remove-products-offers/:id', authenticateJwtToken, authAdmin, post.removeProductstoOffers)
 
 router.get('/get-offers',   post.getShopOffers)
 

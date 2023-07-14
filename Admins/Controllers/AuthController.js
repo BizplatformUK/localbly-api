@@ -122,6 +122,24 @@ const Login = async(req,res)=> {
     }
 }
 
+const GoogleLogin = async(req,res)=> {
+    const {email}=req.body
+    try{
+    
+    const user = await getuserBYEmail(email);
+    if(!user){return res.status(404).json({error:'Sorry, but the email address you entered is not registered, please check and try again', code:3})}
+    if(!user.approved){return res.status(401).json({error: 'Your admin account has not been approved yet', code:3})}
+    const data = {name:user.name, email:user.email, id:user.id, role:user.role}
+    const token = generateAccessToken(data)
+    const shop = await getSingleItem({id:user.shopID}, 'shops')
+    const hasShop = !shop ?  false : true
+    const response = {user:'Login Success', token, id:user.id, name:user.name, email:user.email, role:user.role, shopSlug:shop.slug, hasShop, shopid:user.shopID}
+    res.status(200).json(response)
+    }catch(error){
+        return res.status(500).json(error.message)
+    }
+}
+
 
 
 
@@ -478,5 +496,6 @@ module.exports={
     approveAdmin,
     suspendAdmin,
     deleteAdmin,
-    getShopAdmins
+    getShopAdmins,
+    GoogleLogin
 }
