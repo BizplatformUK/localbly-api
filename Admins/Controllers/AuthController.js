@@ -2,7 +2,7 @@ const {generateID, isValidEmail, getAbbreviation, slugify, generateToken, extrac
 const {generateAccessToken, hashPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
 const {sendEmail, confirmAdminEmail} = require('../../Emails/Controllers/EmailController')
-const {insertData,deleteMultipleItems, findShopAdmins, searchTypes, getuserBYNumber,  deleteData,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {insertData,deleteMultipleItems, updateUserShopID, findShopAdmins, searchTypes, getuserBYNumber,  deleteData,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
 const axios = require('axios')
 
@@ -193,8 +193,10 @@ const createShop = async(req,res)=> {
    try{
     const user = await getByID(id, 'users')
     if(!user){return res.status(404).json({error:'User not found', code:3})}
-    const shop = await getSingleItem({name}, 'shops')
-    if(shop){return res.status(400).json({error:'a shop with this name already exists use a different name', code:3})}
+    //const findshop = await finshopbyName(name);
+    //if(findshop){return res.status(400).json({error: 'A shop with this name already exists, please use a different name', code:3})}
+    //const shop = await getSingleItem({name}, 'shops')
+    //if(shop){return res.status(400).json({error:'a shop with this name already exists use a different name', code:3})}
     const currency = await getCountries(country);
     const slug = slugify(name)
     const abbr = getAbbreviation(name)
@@ -218,8 +220,8 @@ const createShop = async(req,res)=> {
     const insert = await insertData(data, 'shops')
     if(!insert){return res.status(404).json({error:insert, code:0})}
     const params = {shopID:shopid}
-    const update = updateData(id, params, 'users')
-    res.status(200).json({message: 'shop created successfully', code:0, insert});
+    const update = updateUserShopID(id, shopid)
+    res.status(200).json({message: 'shop created successfully', code:0, insert, update});
 
    }catch(error){
     return res.status(500).json({error:error.message, code:3})

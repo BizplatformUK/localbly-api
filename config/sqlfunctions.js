@@ -22,6 +22,20 @@ const dbCheck = async (data, table) => {
   }
 };
 
+const finshopbyName = async (name) => {
+  try {
+    const sql = `SELECT * FROM shops WHERE name = ? `;
+    
+    const [rows] = await db.query(sql, [name])
+    if(rows.length < 1){
+      return false
+    }
+    return true;
+  } catch (error) {
+    return error.message;
+  }
+};
+
 
 const ifShopExists = async (id) => {
     try {
@@ -142,6 +156,16 @@ const updateData = async(id, data, table) => {
     }
   
 };
+
+const updateUserShopID = async(userID, shopID)=> {
+  try{
+    let update = `UPDATE users SET shopID = ? WHERE id = ?`
+    const [results] = await db.query(update, [shopID, userID])
+    return results;
+  }catch(error){
+    return error
+  }
+}
 
 const deleteData = async(id, shopid, table) => {
   try{
@@ -1141,6 +1165,8 @@ module.exports={
     searchTypes,
     findShopCollectionswithProducts,
     getuserBYNumber,
-    findShopAdmins
+    findShopAdmins,
+    updateUserShopID,
+    finshopbyName
     
 }
