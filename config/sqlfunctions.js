@@ -530,8 +530,8 @@ const findCurrentOffers = async(id, pageNumber) => {
   try{
     const itemsPerPage = 8;
 
-    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ?';
-    const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ?';
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validTo >= CURDATE() AND shopID = ?';
+    const sql = 'SELECT * FROM offers WHERE validTo >= CURDATE() AND shopID = ?';
 
     const [count] = await db.query(countsql, [id])
     const totalItems = count[0].total
@@ -553,8 +553,8 @@ const findPastOffers = async(id, pageNumber) => {
   try{
     const itemsPerPage = 8;
 
-    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom >= CURDATE() AND validTo <= CURDATE() AND shopID = ?';
-    const sql = 'SELECT * FROM offers WHERE validFrom >= CURDATE() AND validTo <= CURDATE() AND shopID = ?';
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validTo <= CURDATE() AND shopID = ?';
+    const sql = 'SELECT * FROM offers WHERE validTo <= CURDATE() AND shopID = ?';
 
     const [count] = await db.query(countsql, [id])
     const totalItems = count[0].total
@@ -574,8 +574,8 @@ const filterOfferTypes = async(id, type, pageNumber) => {
   try{
     const itemsPerPage = 8;
 
-    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND type = ?';
-    const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND type = ?';
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validTo >= CURDATE() AND shopID = ? AND type = ?';
+    const sql = 'SELECT * FROM offers WHERE validTo >= CURDATE() AND shopID = ? AND type = ?';
 
     const [count] = await db.query(countsql, [id, type])
     const totalItems = count[0].total
@@ -595,8 +595,8 @@ const filterOfferFeatured = async(id, featured, pageNumber) => {
   try{
     const itemsPerPage = 8;
 
-    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND featured = ?';
-    const sql = 'SELECT * FROM offers WHERE validFrom <= CURDATE() AND validTo >= CURDATE() AND shopID = ? AND featured = ?';
+    const countsql = 'SELECT COUNT(*) AS total FROM offers WHERE  validTo >= CURDATE() AND shopID = ? AND featured = ?';
+    const sql = 'SELECT * FROM offers WHERE validTo >= CURDATE() AND shopID = ? AND featured = ?';
 
     const [count] = await db.query(countsql, [id, featured])
     const totalItems = count[0].total
