@@ -70,11 +70,11 @@ const deleteService = async(req,res)=> {
     try{
         const service = await getByID(serviceId, 'services')
         if(!service){return res.status(404).json({error:'service not found', code:3})}
-        const deletion = await deleteData(serviceId, 'services')
         const blobname = extractFileNameFromUrl(service.picture)
         const deleted = await deleteBlob(blobname, 'services')
+        const deletion = await deleteData(serviceId, id, 'services')
         if(!deletion){return res.sendStatus(500)}
-        res.status(200).json({message:'Service deleted successfully', id:serviceId, code:0})
+        res.status(200).json({message:'Service deleted successfully', id:serviceId, deletion, code:0})
 
     }catch(error){
         return res.status(500).json({error:error.message, code:3})
