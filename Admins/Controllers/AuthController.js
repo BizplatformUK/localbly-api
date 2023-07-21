@@ -220,7 +220,8 @@ const createShop = async(req,res)=> {
     }
     const insert = await insertData(data, 'shops')
     if(!insert){return res.status(404).json({error:insert, code:0})}
-    const update = updateUserShopID(id, insert.id)
+    const update = await updateUserShopID(id, insert.id)
+    if(!update){return res.status(400).json({error: 'unable to create shop please try again', code:3})}
     res.status(200).json({message: 'shop created successfully', code:0, insert, update});
 
    }catch(error){
@@ -296,8 +297,8 @@ const fetchbanner = async(req,res)=> {
         const params = {name, email, number}
         const result = await updateData(id, params, 'users');
         if(!result){return res.status(404).json({error:result, code:3})}
-        //const response = {name:result.name, id:result.id, email:result.email, number:result.number}
-        res.status(200).json({message: 'Profile updated successfully', code:0, result})
+        const response = {name:result.name, id:result.id, email:result.email, number:result.number}
+        res.status(200).json({message: 'Profile updated successfully', code:0, response})
 
     }catch(error){
         return res.status(500).json(error.message)

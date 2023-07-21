@@ -18,7 +18,7 @@ router.get('/fetch', post.fetchusers)
 
 router.get('/fetch-user/:id', post.getSingleUser)
 
-router.patch('/update-user/:id', authenticateJwtToken, post.updateuser);
+router.patch('/update-user/:id', /*authenticateJwtToken,*/ post.updateuser);
 
 router.post('/add-to-banner/:id', authenticateJwtToken, authAdmin, post.addtoBanner)
 

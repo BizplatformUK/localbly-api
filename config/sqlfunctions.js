@@ -157,11 +157,18 @@ const updateData = async(id, data, table) => {
   
 };
 
+
+
 const updateUserShopID = async(userID, shopID)=> {
   try{
     let update = `UPDATE users SET shopID = ? WHERE id = ?`
     const [results] = await db.query(update, [shopID, userID])
-    return results;
+    const sql = `SELECT name, id, email,shopID, role, number FROM users WHERE shopID = ? LIMIT 1`
+    const [rows] = await db.query(sql, [shopID])
+    if(rows.length < 1){
+      return false
+    }
+    return rows[0]
   }catch(error){
     return error
   }
