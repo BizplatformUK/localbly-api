@@ -23,7 +23,7 @@ router.get('/get-shop-products', post.getshopProducts)
 
 router.get('/search-products', post.searchProducts)
 
-router.get('/get-offer-products',  post.getofferProducts)
+router.get('/get-offer-products',  post.fetchofferProducts)
 
 router.get('/get-related-products', post.getRelatedproducts)
 

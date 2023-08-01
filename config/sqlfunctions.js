@@ -703,7 +703,7 @@ const filterOfferFeatured = async(id, featured, pageNumber) => {
       const sql = `SELECT 
       products.*, 
       categories.name AS category, 
-      subcategories.name AS subcategory, 
+      subcategories.name AS subcategory,
       COALESCE(collections.name, null) AS collection,
       COALESCE(collections.slug, null) AS collection_slug
       FROM products
@@ -775,9 +775,11 @@ const getOfferProducts = async(id, slug, pageNumber) => {
       const countSql = `SELECT COUNT(*) AS total FROM products
                           JOIN offers ON offers.id = products.offerID
                           WHERE offers.slug = ? AND products.shopID = ?`;
-      const sql = `SELECT products.*, offers.slug AS offerSlug, offers.name AS offerName
-                           FROM products
+      const sql = `SELECT products.*, offers.slug AS offerSlug, offers.name AS offerName, categories.name AS category, subcategories.name AS subcategory,
+                           categories.slug AS categorySlug, subcategories.slug AS subcategorySlug FROM products
                            JOIN offers ON offers.id = products.offerID
+                           JOIN categories ON categories.id = products.categoryID
+                           JOIN subcategories ON subcategories.id = products.subcategoryID
                            WHERE offers.slug = ? AND products.shopID = ?
                            ORDER BY products.createdAt DESC
                            LIMIT ? OFFSET ?`;
@@ -945,9 +947,9 @@ const findCollectionsProducts = async(id, slug, pageNumber) => {
     p.salePrice AS salePrice,
     c.name AS collectionName, 
     c.slug AS collectionSlug, 
-    pc.name AS categoryName, 
+    pc.name AS category, 
     pc.slug AS categorySlug, 
-    sc.name AS subcategoryName,
+    sc.name AS subcategory,
     sc.slug AS subcategorySlug
     FROM products p
     JOIN collections c ON p.collectionsID = c.id
@@ -986,11 +988,11 @@ const findAllCollectionsProducts = async(id, slug, pageNumber) => {
     p.onSale AS sale,
     p.picture AS picture,
     p.salePrice AS salePrice,
-    c.name AS collectionName, 
+    c.name AS collection, 
     c.slug AS collectionSlug, 
     pc.name AS categoryName, 
     pc.slug AS categorySlug, 
-    sc.name AS subcategoryName,
+    sc.name AS subcategory,
     sc.slug AS subcategorySlug
     FROM products p
     JOIN collections c ON p.collectionsID = c.id
@@ -1015,8 +1017,8 @@ const findAllCollectionsProducts = async(id, slug, pageNumber) => {
 
 const findRelatedProducts = async(id, slug) => {
   try{
-    const sql = `SELECT p.*, c.slug AS categorySlug, sc.slug AS subcategorySlug 
-     FROM products p 
+    const sql = `SELECT p.*, c.slug AS categorySlug, sc.slug AS subcategorySlug, 
+     c.name AS category, sc.name AS subcategory FROM products p 
      JOIN categories c ON p.categoryID = c.id 
      JOIN subcategories sc ON p.subcategoryID = sc.id
      WHERE c.id =(SELECT categoryID from products WHERE slug = '${slug}')

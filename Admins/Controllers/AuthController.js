@@ -152,8 +152,8 @@ const approveAdmin = async(req,res)=> {
         const params = {approved:true} 
         const approve = await updateData(id, params, 'users');
         if(!approve){return res.sendStatus(404)}
-        res.status(200).json({message:'admin approved successfully', code:0})
         await confirmAdminEmail(admin.email, admin.shopID, admin.name)
+        return res.status(200).json({message:'admin approved successfully', code:0})
     }catch(error){
         return res.status(500).json(error)
     }
@@ -221,7 +221,7 @@ const createShop = async(req,res)=> {
     const insert = await insertData(data, 'shops')
     if(!insert){return res.status(404).json({error:insert, code:0})}
     const update = await updateUserShopID(id, insert.id)
-    if(!update){return res.status(400).json({error: 'unable to create shop please try again', code:3})}
+    if(!update){return res.status(400).json({error: 'unable to create shop please try again', code:3, insert})}
     res.status(200).json({message: 'shop created successfully', code:0, insert, update});
 
    }catch(error){
@@ -267,7 +267,7 @@ const removeMultiplefromBanner = async(req,res)=> {
         const find = await getByID(id, 'shops')
         if(!find){return res.status(404).json({error:'item not found', code:3})}
         const remove = await deleteMultipleItems(ids, id, 'banner');
-        res.status(200).json({message: 'success', code:0,  response:ids})
+        res.status(200).json({message: 'success', code:0, remove,  response:ids})
     }catch(error){
         return res.status(500).json({error:error.message, code:3})
     }

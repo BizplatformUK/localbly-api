@@ -295,7 +295,7 @@ const searchProducts = async(req,res)=> {
     }
 }
 
-const getofferProducts = async(req,res)=> {
+const fetchofferProducts = async(req,res)=> {
     const {id, page, slug} = req.query;
     try{
         let response = []
@@ -333,19 +333,19 @@ const getFeaturedHomeProducts = async(req,res)=> {
                 slug:product.slug,
                 price:product.price,
                 picture:product.picture, 
-                category:product.categoryName,
+                category:product.category,
                 categorySlug:product.categorySlug,
                 subcategorySlug:product.subcategorySlug,
-                subcategory:product.subcategoryName,
+                subcategory:product.subcategory,
                 categoryID:product.categoryID,
                 subcategoryID:product.subcategoryID,
-                onsale:product.onSale,
-                saleprice:product.salePrice,
+                onSale:product.onSale,
+                salePrice:product.salePrice,
                 discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
             }
             response.push(item)
         })
-        res.status(200).json(products);
+        res.status(200).json(response);
 
     }catch(error){
         res.status(500).json(error.message)
@@ -383,8 +383,8 @@ const getFeaturedCategoryProducts = async(req,res)=> {
                 categorySlug:product.categorySlug,
                 subcategorySlug:product.subcategorySlug,
                 subcategory:product.subcategory,
-                onsale:product.onSale,
-                saleprice:product.salePrice,
+                onSale:product.onSale,
+                salePrice:product.salePrice,
                 discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
             }
             response.push(item)
@@ -414,8 +414,8 @@ const getSubcategoryProducts = async(req,res)=> {
                 categorySlug:product.categorySlug,
                 subcategorySlug:product.subcategorySlug,
                 subcategory:product.subcategoryName,
-                onsale:product.onSale,
-                saleprice:product.salePrice,
+                onSale:product.onSale,
+                salePrice:product.salePrice,
                 discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
             }
             response.push(item)
@@ -510,7 +510,7 @@ module.exports = {
     addProduct, 
     editProduct, 
     deleteProducts, 
-    getofferProducts,
+    fetchofferProducts,
     addFeaturedCategoryProducts,
     removeFeaturedCategoryProducts,
     getRelatedproducts,

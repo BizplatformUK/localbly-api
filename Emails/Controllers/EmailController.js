@@ -62,7 +62,7 @@ const confirmAdminEmail = async(email, shopID, name)=> {
     const sent =  await pollEmailService(email, subject, message);
     return sent
   }catch(error){
-    return res.status(500).json(error)
+    return error
   }
 }
 
