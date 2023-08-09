@@ -168,3 +168,14 @@ module.exports = {
     compareStrings,
     formatPhoneNumber
 }
+
+function generateName(slug)
+{
+    //add month and year to string 3 random characters
+    let characters ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for(let i =0; i < 3; i++){
+        slug = slug + characters[Math.random() * characters.length];
+    }
+    
+}
+module.exports = generateName;
