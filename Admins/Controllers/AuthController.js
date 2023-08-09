@@ -200,6 +200,7 @@ const createShop = async(req,res)=> {
     //if(shop){return res.status(400).json({error:'a shop with this name already exists use a different name', code:3})}
     const currency = await getCountries(country);
     const slug = slugify(name)
+    //const uniqueName = generateName(slug)
     const abbr = getAbbreviation(name)
     const shopid = abbr + generateID();
     const data = {
