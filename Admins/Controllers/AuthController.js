@@ -1,8 +1,8 @@
-const {generateID, isValidEmail, getAbbreviation, slugify, generateToken, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
+const {generateID, isValidEmail, getAbbreviation, slugify, generateUniqueName,  extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {generateAccessToken, hashPassword} = require('../../Utils/Auth')
 const {deleteBlob} = require('../Images/ImageController');
 const {sendEmail, confirmAdminEmail} = require('../../Emails/Controllers/EmailController')
-const {insertData,deleteMultipleItems, updateUserShopID, findShopAdmins, searchTypes, getuserBYNumber,  deleteData,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, countItems} = require('../../config/sqlfunctions')
+const {insertData,deleteMultipleItems, finshopbySlug, updateUserShopID, findShopAdmins, searchTypes, getuserBYNumber,  deleteData,  changePassword, getuserBYResetToken, totalShopProducts, getuserBYEmail, getShops, getUsers, getShopTypes, findsingleShop,deleteFromBanner, getByID, getData, updateData, getBanner, getSingleItem, getDataByParams, finshopbyName} = require('../../config/sqlfunctions')
 const bcrypt = require('bcrypt')
 const axios = require('axios')
 
@@ -64,9 +64,9 @@ const Register = async(req,res)=> {
         }
         const data = await insertData(user, 'users')
         if(!data){return res.status(500).json(data)}
-        const details = {id:data.id, name:data.name}
-        res.status(200).json({message: 'Registration successful', code:0, details});
-        await sendEmail(email, shopID, name)
+        const response = {id:data.id, name:data.name}
+        res.status(200).json({message: 'Registration successful', code:0, response});
+        //await sendEmail(email, shopID, name)
     }catch(error){
         res.status(500).json({err:error.message, code:3})
     }
@@ -194,18 +194,18 @@ const createShop = async(req,res)=> {
    try{
     const user = await getByID(id, 'users')
     if(!user){return res.status(404).json({error:'User not found', code:3})}
-    //const findshop = await finshopbyName(name);
-    //if(findshop){return res.status(400).json({error: 'A shop with this name already exists, please use a different name', code:3})}
+    const isShopPresent = await finshopbyName(name);
     //const shop = await getSingleItem({name}, 'shops')
     //if(shop){return res.status(400).json({error:'a shop with this name already exists use a different name', code:3})}
     const currency = await getCountries(country);
     const slug = slugify(name)
+    const newSlug = generateUniqueName(slug)
     //const uniqueName = generateName(slug)
     const abbr = getAbbreviation(name)
     const shopid = abbr + generateID();
     const data = {
         id:shopid,
-        slug:slug,
+        slug: isShopPresent ? newSlug : slug,
         town:town,
         version:'Free Trial',
         sellingOn:socials,
@@ -223,11 +223,49 @@ const createShop = async(req,res)=> {
     if(!insert){return res.status(404).json({error:insert, code:0})}
     const update = await updateUserShopID(id, insert.id)
     if(!update){return res.status(400).json({error: 'unable to create shop please try again', code:3, insert})}
-    res.status(200).json({message: 'shop created successfully', code:0, insert, update});
+    res.status(200).json({message: 'shop created successfully', code:0, insert});
 
    }catch(error){
     return res.status(500).json({error:error.message, code:3})
    }
+}
+
+const updateShop = async(req,res)=> {
+    const {name, town, logo, location, phoneNumbers, email, color, whatsappNo, fb, instagram, country} = req.body
+    const {id}= req.params;
+    if(!shop){return res.status(404).json({error:'Shop not found', code:3})}
+    const currency = await getCountries(country);
+    const imgName = extractFileNameFromUrl(shop.logo)
+    const editImg = extractFileNameFromUrl(logo);
+    const strSimilar = compareStrings(imgName, editImg)
+    const slug = slugify(name)
+    try{
+        if(!strSimilar){
+           const imgdelete = await deleteBlob(imgName, 'logos')
+           if(imgdelete.code == 3){return res.status(500).json(imgdelete.error)}
+        }
+        const params = {
+            name,
+            town,
+            logo,
+            location,
+            phoneNumbers,
+            email,
+            brandcolor:color,
+            whatsappnumber:whatsappNo,
+            facebooklink:fb,
+            instagramlink:instagram,
+            country,
+            currency
+        }
+        const result = await updateData(id, params, 'shops');
+        if(!result){return res.status(404).json({error:result, code:3})}
+        //const response = {name:result.name, town:result.town, location:result.location, numbers:result.phoneNumbers, logo:result.logo, email:result.email, color:result.brandcolor}
+        res.status(200).json({message: 'Shop updated successfully', code:0, result});
+
+    }catch(error){
+        return res.status(500).json(error.message)
+    }
 }
 
 const addtoBanner = async(req,res)=> {
@@ -279,9 +317,12 @@ const removeMultiplefromBanner = async(req,res)=> {
 const fetchbanner = async(req,res)=> {
    try{
     const pageNumber = parseInt(req.query.page )|| 1;
-    const shop = req.query.id ? await getDataByParams({shopID:req.query.id}, 'banner', pageNumber) : await getBanner(req.query.slug)
-    if(!shop) {return shop}
-    res.status(200).json(shop)
+    const items = req.query.id ? await getDataByParams({shopID:req.query.id}, 'banner', pageNumber) : await getBanner(req.query.slug)
+    if(!items) {return items}
+    if(req.query.slug){
+        return res.status(200).json(items)
+    }
+    return res.status(200).json(items)
 
    }catch(error){
     console.log(error)
@@ -321,47 +362,6 @@ const resetPassword = async(req,res)=> {
         return res.status(500).json(error.message)
     }
 }
-
-
-const updateShop = async(req,res)=> {
-    const {name, town, logo, location, phoneNumbers, email, color, whatsappNo, fb, instagram, country} = req.body
-    const {id}= req.params;
-    const shop = await getByID(id, 'shops')
-    if(!shop){return res.status(404).json({error:'Shop not found', code:3})}
-    const currency = await getCountries(country);
-    const imgName = extractFileNameFromUrl(shop.logo)
-    const editImg = extractFileNameFromUrl(logo);
-    const strSimilar = compareStrings(imgName, editImg)
-    try{
-        if(!strSimilar){
-           const imgdelete = await deleteBlob(imgName, 'logos')
-           if(imgdelete.code == 3){return res.status(500).json(imgdelete.error)}
-        }
-        const params = {
-            name,
-            town,
-            logo,
-            location,
-            phoneNumbers,
-            email,
-            brandcolor:color,
-            whatsappnumber:whatsappNo,
-            facebooklink:fb,
-            instagramlink:instagram,
-            country,
-            currency
-        }
-        const result = await updateData(id, params, 'shops');
-        if(!result){return res.status(404).json({error:result, code:3})}
-        //const response = {name:result.name, town:result.town, location:result.location, numbers:result.phoneNumbers, logo:result.logo, email:result.email, color:result.brandcolor}
-        res.status(200).json({message: 'Shop updated successfully', code:0, result});
-
-    }catch(error){
-        return res.status(500).json(error.message)
-    }
-}
-
-
 
 const addTypes = async(req,res)=> {
     const {name, picture} = req.body;

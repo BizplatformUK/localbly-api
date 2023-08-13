@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {deleteBlob} = require('../Images/ImageController')
-const { insertData, updateData, getSingleItem, deleteData, isPresentInBanner, fetchFeaturedShopCategories, dbCheck, getDataByParams, getByID, getDataByMultipleParams, searchData} = require('../../config/sqlfunctions');
+const { insertData, fetchShopCategories, updateData, getSingleItem, deleteData, isPresentInBanner, fetchFeaturedShopCategories, dbCheck, getDataByParams, getByID, getDataByMultipleParams, searchData} = require('../../config/sqlfunctions');
 
 const addCategory = async(req,res)=> {
     const {name, image, featured} = req.body
@@ -141,7 +141,7 @@ const getShopCategories = async(req,res)=> {
             const pageNumber = parseInt(page)|| 1;
             const response = []
             const params = {shopID:id}
-            const categories =  await getDataByParams(params, 'categories', pageNumber);
+            const categories =  req.query.slug ? await fetchShopCategories(req.query.slug, pageNumber) : await getDataByParams(params, 'categories', pageNumber);
             const cats = categories.items;
             for (const category of cats) {
                 const isPresent = await isPresentInBanner(category.id, id);
@@ -164,10 +164,11 @@ const getShopCategories = async(req,res)=> {
 
 const getFeaturedShopCategories = async(req,res)=> {
     const {id, page} = req.query;
+    const slug = req.query.slug || null
     try{
         const pageNumber = parseInt(page)|| 1;
         let response = []
-            const categories = await fetchFeaturedShopCategories(id, true, pageNumber);
+            const categories = await fetchFeaturedShopCategories(id, slug, true, pageNumber);
             const cats = categories.items;
             for (const category of cats) {
                 const isPresent = await isPresentInBanner(category.id, id);
@@ -216,11 +217,12 @@ const searchCategories = async(req,res)=> {
 }
 
 const getunFeaturedShopCategories = async(req,res)=> {
-    const {id} = req.query;
+    const {id, page} = req.query;
+    const slug = req.query.slug || null
     try{
-        const pageNumber = parseInt(req.query.page )|| 1;
+        const pageNumber = parseInt(page )|| 1;
         let response = []
-            const categories = await fetchFeaturedShopCategories(id, false, pageNumber);
+            const categories = await fetchFeaturedShopCategories(id, slug, false, pageNumber);
             const cats = categories.items;
             for (const category of cats) {
                 const isPresent = await isPresentInBanner(category.id, id);

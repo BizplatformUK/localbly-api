@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, extractFileNameFromUrl, compareStrings} = require('../../Utils/Utils');
 const {deleteBlob} = require('../Images/ImageController')
-const {insertData, updateData, deleteData, dbCheck, getDataByParams, getByID, searchData} = require('../../config/sqlfunctions')
+const {insertData, updateData, fetchShopServices, deleteData, dbCheck, getDataByParams, getByID, searchData} = require('../../config/sqlfunctions')
 
 
 const addService = async(req,res)=> {
@@ -82,11 +82,11 @@ const deleteService = async(req,res)=> {
 }
 
 const fetchServices = async(req,res)=> {
-    const {id, page} = req.query;
+    const {id, page, slug} = req.query;
     try{
         const pageNumber = parseInt(page )|| 1;
         const params = {shopID:id}
-        const services =  await getDataByParams(params, 'services', pageNumber);
+        const services = slug ? await fetchShopServices(slug, pageNumber) : await getDataByParams(params, 'services', pageNumber);
         return res.status(200).json(services)
     }catch(error){
         return res.status(500).json(error.message)

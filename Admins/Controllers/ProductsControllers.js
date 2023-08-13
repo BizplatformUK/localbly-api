@@ -1,6 +1,6 @@
 const {generateID, getAbbreviation, slugify, getDiscountPrice, extractFileNameFromUrl,  compareStrings} = require('../../Utils/Utils');
 const {deleteBlob, deleteImages} = require('../Images/ImageController')
-const {insertData, updateData, filterProductsNotInCollection, searchShopProducts, findAllCollectionsProducts, filterProductsNotInOffer, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
+const {insertData, updateData, finshopbySlug, filterProductsNotInCollection, searchShopProducts, findAllCollectionsProducts, filterProductsNotInOffer, fetchFeaturedHomeProducts, toggleProductFeaturedHome, toggleProductFeaturedCategory, findshopproducts, deleteData, deleteProductsFromOffer,findCollectionsProducts, findSubcategoryProducts, findSingleProductBySlug, findFeaturedCategoryProducts, dbCheck, addProductsToOffer, findRelatedProducts, getOfferProducts, getDataByParams, getByID, getDataByMultipleParams, searchData, getSingleItem}= require('../../config/sqlfunctions');
 
 
 const addProduct = async(req,res)=> {
@@ -283,12 +283,12 @@ const getshopProducts = async(req,res)=> {
 
 const searchProducts = async(req,res)=> {
     const {id,term, page} = req.query;
+    const slug = req.query.slug || null
     try{
         const pageNumber = parseInt(page )|| 1;
-        const products = await searchShopProducts(term,  pageNumber, id);
-        const shop = await getSingleItem({id}, 'shops')
+        const products = await searchShopProducts(term, slug,  pageNumber, id);
         const items = products.items;
-        return res.status(200).json({totalPages:products.totalPages, currency:shop.currency, items})
+        return res.status(200).json({totalPages:products.totalPages, items})
 
     }catch(error){
         return res.status(400).json(error)
@@ -310,9 +310,9 @@ const fetchofferProducts = async(req,res)=> {
 
 
 const getRelatedproducts = async(req,res)=> {
-    const {id, slug} = req.query;
+    const {shopSlug, slug} = req.query;
     try{
-        const products = await findRelatedProducts(id, slug)
+        const products = await findRelatedProducts(shopSlug, slug)
         res.status(200).json(products)
 
     }catch(error){
@@ -322,10 +322,12 @@ const getRelatedproducts = async(req,res)=> {
 
 const getFeaturedHomeProducts = async(req,res)=> {
     const {id, page}=req.query;
+    const slug = req.query.slug || null
     try{
         const pageNumber = parseInt(page) || 1;
-        const products = await fetchFeaturedHomeProducts(id, true, pageNumber)
+        const products = await fetchFeaturedHomeProducts(id, slug, true, pageNumber)
         let response = []
+        const shop = await finshopbySlug(slug)
         products.items.forEach(product=> {
             const item = {
                 id:product.id, 
@@ -341,7 +343,9 @@ const getFeaturedHomeProducts = async(req,res)=> {
                 subcategoryID:product.subcategoryID,
                 onSale:product.onSale,
                 salePrice:product.salePrice,
-                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
+                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount),
+                currency: slug ? shop.currency : null,
+                brandcolor: slug ? shop.brandcolor : null
             }
             response.push(item)
         })
@@ -368,10 +372,12 @@ const getstandardproducts = async(req,res)=> {
 
 const getFeaturedCategoryProducts = async(req,res)=> {
     const {id, page, slug} = req.query;
+    const shopSlug = req.query.shopSlug || null
     try{
         const pageNumber = parseInt(page) || 1;
-        const products = await findFeaturedCategoryProducts(id, slug, true, pageNumber)
+        const products = await findFeaturedCategoryProducts(id, slug, shopSlug, true, pageNumber)
         let response = []
+        const shop = await finshopbySlug(shopSlug)
         products.items.forEach(product=> {
             const item = {
                 id:product.id, 
@@ -385,7 +391,9 @@ const getFeaturedCategoryProducts = async(req,res)=> {
                 subcategory:product.subcategory,
                 onSale:product.onSale,
                 salePrice:product.salePrice,
-                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
+                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount),
+                currency: shopSlug ? shop.currency : null,
+                brandcolor: shopSlug ? shop.brandcolor : null
             }
             response.push(item)
         })
@@ -399,10 +407,12 @@ const getFeaturedCategoryProducts = async(req,res)=> {
 
 const getSubcategoryProducts = async(req,res)=> {
     const {id, slug, page} = req.query;
+    const shopSlug = req.query.shopSlug || null
     try{
         const pageNumber = parseInt(page) || 1;
-        const products = await findSubcategoryProducts(id, slug, pageNumber)
+        const products = await findSubcategoryProducts(id, slug, shopSlug, pageNumber)
         let response = []
+        const shop = await finshopbySlug(shopSlug)
         products.items.forEach(product=> {
             const item = {
                 id:product.id, 
@@ -416,7 +426,9 @@ const getSubcategoryProducts = async(req,res)=> {
                 subcategory:product.subcategoryName,
                 onSale:product.onSale,
                 salePrice:product.salePrice,
-                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount)
+                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount),
+                currency : shopSlug ? shop.currency : null,
+                brandcolor:shopSlug ? shop.brandcolor : null
             }
             response.push(item)
         })
@@ -428,9 +440,11 @@ const getSubcategoryProducts = async(req,res)=> {
 }
 
 const getSingleProduct = async(req,res)=> {
-    const {id, slug} = req.query;
+    const {slug, shopSlug} = req.query;
     try{
-        const product = await findSingleProductBySlug(id, slug)
+        const product = await findSingleProductBySlug(shopSlug, slug)
+        const shop = await finshopbySlug(shopSlug)
+        const currency = shop.currency
         const item = {
             id:product.id, 
             name:product.name, 
@@ -441,9 +455,12 @@ const getSingleProduct = async(req,res)=> {
             subcategory:product.subcategorySlug,
             onsale:product.onSale,
             saleprice:product.salePrice,
+            options:product.options,
             discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount),
             couponCode:product.code == null ? null : product.code,
-            description:product.description
+            description:product.description,
+            currency,
+            orderNo:shop.whatsappnumber
         }
         res.status(200).json(item)
 
@@ -454,10 +471,32 @@ const getSingleProduct = async(req,res)=> {
 
 const getCollectionsProducts = async(req,res)=> {
     const {id, slug, page} = req.query;
+    const shopSlug = req.query.shopSlug || null
     try{
         const pageNumber = parseInt(page) || 1;
-        const products = await findCollectionsProducts(id, slug, pageNumber);
-        res.status(200).json(products)
+        const shop = await finshopbySlug(shopSlug)
+        const products = await findCollectionsProducts(id, slug, shopSlug, pageNumber);
+        const response = [];
+        products.items.forEach(product=> {
+            const item = {
+                id:product.id, 
+                name:product.name, 
+                slug:product.slug,
+                price:product.price,
+                picture:product.picture, 
+                category:product.categoryName,
+                categorySlug:product.categorySlug,
+                subcategorySlug:product.subcategorySlug,
+                subcategory:product.subcategoryName,
+                onSale:product.onSale,
+                salePrice:product.salePrice,
+                discountPrice: product.discount == null ? 0 : getDiscountPrice(product.price, product.discount),
+                currency : shopSlug ? shop.currency : null,
+                brandcolor:shopSlug ? shop.brandcolor : null
+            }
+            response.push(item)
+        })
+        res.status(200).json(response)
 
     }catch(error){
         res.status(500).json(error)

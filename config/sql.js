@@ -10,7 +10,7 @@ const db = mysql.createPool({
   port:process.env.SQL_PORT,
   ssl: {
     ca: fs.readFileSync("./DigiCertGlobalRootCA.crt.pem")
-  } 
+  }
 }).promise();
 
 

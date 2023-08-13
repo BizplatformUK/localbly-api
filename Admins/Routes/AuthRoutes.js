@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/find', post.findshop);
 
-router.post('/register', userExists, post.Register)
+router.post('/register', /*userExists,*/ post.Register)
 
 router.post('/login', post.Login)
 

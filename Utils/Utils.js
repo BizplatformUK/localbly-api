@@ -145,6 +145,16 @@ function compareStrings(str1, str2) {
     return phoneNumber;
   }
 
+  function generateUniqueName(slug) {
+    const randomChars = Array.from({ length: 5 }, () =>
+        Math.random().toString(36).charAt(2)
+    ).join('');
+
+    const uniqueSlug = `${slug}-${randomChars}`;
+
+    return uniqueSlug
+}
+
 const piclink = `https://localblyimages.blob.core.windows.net/images/logo.png`
 
 module.exports = {
@@ -166,16 +176,6 @@ module.exports = {
     extractFileNameFromUrl,
     piclink,
     compareStrings,
-    formatPhoneNumber
+    formatPhoneNumber,
+    generateUniqueName
 }
-
-function generateName(slug)
-{
-    //add month and year to string 3 random characters
-    let characters ='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for(let i =0; i < 3; i++){
-        slug = slug + characters[Math.random() * characters.length];
-    }
-    
-}
-module.exports = generateName;

@@ -148,10 +148,11 @@ const fetchCollections = async(req,res)=> {
 
 const fetchFeaturedCollections = async(req,res)=> {
     const {id, page} = req.query;
+    const slug = req.query.slug || null
     try{
         const pageNumber = parseInt(page )|| 1;
         let response = []
-        const collections = await filterShopCollections(id, true, pageNumber);
+        const collections = await filterShopCollections(id, slug, true, pageNumber);
         const cols = collections.items
         for (const collection of cols) {
             const isPresent = await isPresentInBanner(collection.id, id);
@@ -177,8 +178,9 @@ const fetchFeaturedCollections = async(req,res)=> {
 
 const getFeaturedCollectionsWithProducts = async(req,res)=> {
     const {id} = req.query;
+    const slug = req.query.slug || null
     try{
-        const collections = await findShopCollectionswithProducts(id, true);
+        const collections = await findShopCollectionswithProducts(id, slug, true);
         return res.status(200).json(collections)
  
     }catch(error){

@@ -114,10 +114,10 @@ const getShopSubcategories = async(req,res)=> {
 
 
 const getCatSubcategories = async(req,res)=> {
-    const {id, page, slug, catId} = req.query;
+    const {id, shopSlug, page, slug, catId} = req.query;
     const pageNumber = parseInt(page)|| 1;
     try{
-        const subcategories = slug ? await getSubcategoriesByCategorySlug(slug, id, pageNumber) : await getSubcategoriesByCategoryID(id,catId,pageNumber);
+        const subcategories = slug ? await getSubcategoriesByCategorySlug(slug, shopSlug, pageNumber) : await getSubcategoriesByCategoryID(id,catId,pageNumber);
         res.status(200).json(subcategories)
     }catch(error){
         res.status(500).json(error)
